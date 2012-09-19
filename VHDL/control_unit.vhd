@@ -5,7 +5,7 @@
 -- File       : control_unit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/08/03
+-- Last update: 2012/09/18
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Control unit generates the control signal required to carry
@@ -28,17 +28,34 @@ use ieee.std_logic_unsigned.all;
 entity control_unit is
 
   generic (
-    N_width : integer := 4);   -- the width of number of FFT points value. Default value is 4 so that 8 point FFT is the
-                               -- minimum number of FFT point computation allowed.
+    N_width : integer := 7);   -- By default 64 point FFT is supported.
   
   port (
-    clk     : in  std_logic;                            -- clock input
-    N       : in  std_logic_vector (N_width-1 downto 0);        -- number of FFT points
-    rst     : in  std_logic;                            -- reset signal
-    start   : in  std_logic;                            -- enables start of FFT computation
-    SetA_RW : out std_logic;                            -- interconnect A RW signal
-    SetB_RW : out std_logic;                            -- interconnect B RW signal
-    done    : out std_logic);                           -- indicates completion of FFT computation
+    clk               : in  std_logic;          -- clock input
+    rst               : in  std_logic;          -- reset signal
+    start             : in  std_logic;          -- enables start of FFT computation
+    N                 : in  std_logic_vector (N_width-1 downto 0);-- number of FFT points    
+    c_add_sub         : out std_logic;          --add/subtract control signal
+    c_load            : out std_logic;          -- register load control signal
+    c_load1           : out std_logic;          -- register load control signal
+    c_load_P          : out std_logic;          -- load P register input - control signal
+    c_load_P2         : out std_logic;          -- load next P reg input - control signal
+    c_load_Q          : out std_logic;          -- load Q register input - control signal
+    c_load_W          : out std_logic;          -- load W register input - control signal
+    c_sel             : out std_logic;          -- select PR, PI mux control signal
+    SetA_RW           : out std_logic;          -- interconnect A RW signal
+    SetB_RW           : out std_logic;          -- interconnect B RW signal
+    bfy0_ip0_reg_load : out std_logic;          -- butterfly unit0 input0 register load
+    bfy0_ip1_reg_load : out std_logic;          -- butterfly unit0 input1 register load
+    bfy0_mux_sel      : out std_logic;          -- butterfly unit0 input(Q/P) sel
+    bfy0_tw_reg_load  : out std_logic;          -- butterfly unit0 twiddle factor reg load
+    bfy0_tw_sel       : out std_logic;          -- butterfly unit0 twiddle factor sel(WR/WI)
+    bfy1_ip0_reg_load : out std_logic;          -- butterfly unit1 input0 register load
+    bfy1_ip1_reg_load : out std_logic;          -- butterfly unit1 input1 register load
+    bfy1_mux_sel      : out std_logic;          -- butterfly unit1 input(Q/P) sel
+    bfy1_tw_reg_load  : out std_logic;          -- butterfly unit1 twiddle factor reg load
+    bfy1_tw_sel       : out std_logic;          -- butterfly unit1 twiddle factor sel(WR/WI)
+    done              : out std_logic);         -- indicates completion of FFT computation
 end control_unit;
 
 
@@ -51,30 +68,70 @@ architecture control_unit_arch of control_unit is
 begin  -- control_unit_arch
 
   STATE_MACHINE: process(clk, rst)
-    variable           stage_iteration_count : std_logic_vector(N_width - 1 downto 0); --N/4 is the of iterations per stage with two butterfly units
-    variable stage_count : std_logic_vector(N_width - 1 downto 0) := (others =>'0');  --keeping count of FFT computation stage, its same size as that of N
+
+    --N/4 is the number of iterations per stage with two butterfly units
+    variable stage_iteration_count : std_logic_vector(N_width - 1 downto 0);
+
+    --keeping count of FFT computation stage, its same size as that of N
+    variable stage_count : std_logic_vector(N_width - 1 downto 0) := (others =>'0');
+
+    -- clock cycle instance during piplined execution in butterfly
+    variable cycle_clock_instance : integer range 0 to 3 := 0;
+    -- allow three more cycles to flush the pipeline in
+    -- the final stage of FFT computation
+    variable pipe_line_flush : integer := 2;
+    -- flag indicating whether pipeline flush is required or not
+    variable flush_pipeline : boolean := false;  
                                                         
     begin
 
       if rst = '1' then
 
-        done <= '0';
-        SetA_RW <= '0';
-        SetB_RW <= '0';
-        current_state <= S0;            --after reset begin with the initial state
-        next_state <= S0;
-        stage_iteration_count := SHR(N, "10");  --shifting right by 2 positions makes it N/4 which is number of iterations per FFT stage
-        stage_count := stage_count(N_width-1 downto 1) & '1';
+        done              <= '0';
+        SetA_RW           <= '0';
+        SetB_RW           <= '0';
+        c_add_sub         <= '0';
+        c_load            <= '0';
+        c_load1           <= '0';
+        c_load_P          <= '0';
+        c_load_P2         <= '0';
+        c_load_Q          <= '0';
+        c_load_W          <= '0';
+        c_sel             <= '0';
+        bfy0_ip0_reg_load <= '0';
+        bfy0_ip1_reg_load <= '0';
+        bfy0_mux_sel      <= '0';
+        bfy0_tw_reg_load  <= '0';
+        bfy0_tw_sel       <= '0';
+        bfy1_ip0_reg_load <= '0';
+        bfy1_ip1_reg_load <= '0';
+        bfy1_mux_sel      <= '0';
+        bfy1_tw_reg_load  <= '0';
+        bfy1_tw_sel       <= '0';
+
+        --after reset begin with the initial state        
+        current_state <= S0;
+        next_state    <= S0;
+        
+        --shifting right by 1 positions makes it N/2 which is number of clock cycles
+        --required per FFT stage(because butterfly reads new sample every 2
+        --clock cycles)
+        stage_iteration_count := SHR(N, "01");
+        stage_count           := stage_count(N_width-1 downto 1) & '1';
+
+        cycle_clock_instance  := 0;
 
       elsif clk'event and clk = '1' then
 
-        if N >= 8 then                  --supports only 8 or greater FFT points computation
+        --supports only 8 or greater FFT points computation
+        if N >= 8 then 
           
         case current_state is
 
           when  S0 =>
             
-            if stage_count /= N and start = '1' then --start the computation only after start=1
+            --start the computation only after start=1            
+            if stage_count /= N and start = '1' then 
               
                next_state <= S1;
               
@@ -83,76 +140,405 @@ begin  -- control_unit_arch
                 next_state <= S0;
                 
             end if;
-            
-            SetA_RW <= '0'; --update the output signals in the reset state
+
+            --update the output signals in the reset state
+            SetA_RW <= '0';
             SetB_RW <= '0';
-            done <= '0';
+            done    <= '0';
             
           when S1 =>
 
-            stage_iteration_count := stage_iteration_count - 1; --decrease iteration count by 1
+            if flush_pipeline = false then
+              
+            --decrease iteration count by 1
+            stage_iteration_count := stage_iteration_count - 1;
             
               if stage_iteration_count = 0 then
 
-                stage_count := SHL(stage_count, "1"); --current stage is complete go to next stage
-                stage_iteration_count := SHR(N, "10"); --initialize the iteration count for the next stage
+                --current stage is complete, go to next stage
+                stage_count := SHL(stage_count, "1");
+                --initialize the iteration count for the next stage
+                stage_iteration_count := SHR(N, "01");
 
                 if stage_count /= N then
-                  
-                  next_state <= S2; --move to the next state after all the iterations are completed in the current state
-                  
-                  else
 
-                    next_state <= S3; --move to the done state if all the FFT stages are completed
-                    
-                end if;
+                  --move to the next state after all the iterations are
+                  --completed in the current state
+                  next_state <= S2;
+
+                else
+
+                  --for the last two cycles in the last stage of
+                  --FFT there is a need to allow for the pipeline
+                  --to finish its computation
+                  flush_pipeline := true;
+                  pipe_line_flush := pipe_line_flush - 1;
+
+                 end if;
 
               end if;
 
-              SetA_RW <= '1';  --Set the output signals
+              --Set the output control signals
+              SetA_RW <= '1';
               SetB_RW <= '0';
-              done <= '0';
+              done    <= '0';
+
+              case cycle_clock_instance is
+                when 0 =>
+                  c_add_sub         <= '1';
+                  c_load            <= '0';
+                  c_load1           <= '1';
+                  c_load_P          <= '0';
+                  c_load_P2         <= '0';
+                  c_load_Q          <= '1';
+                  c_load_W          <= '1';
+                  c_sel             <= '0';
+                  bfy0_ip0_reg_load <= '1';
+                  bfy0_ip1_reg_load <= '1';
+                  bfy0_mux_sel      <= '0';
+                  bfy0_tw_reg_load  <= '1';
+                  bfy0_tw_sel       <= '0';
+                  bfy1_ip0_reg_load <= '1';
+                  bfy1_ip1_reg_load <= '1';
+                  bfy1_mux_sel      <= '0';
+                  bfy1_tw_reg_load  <= '1';
+                  bfy1_tw_sel       <= '0';
+
+                  cycle_clock_instance := 1;
+                when 1 =>
+                  c_add_sub         <= '0';
+                  c_load            <= '1';
+                  c_load1           <= '0';
+                  c_load_P          <= '1';
+                  c_load_P2         <= '0';
+                  c_load_Q          <= '0';
+                  c_load_W          <= '1';
+                  c_sel             <= '1';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
+                  bfy0_mux_sel      <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
+                  bfy1_mux_sel      <= '1';
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';
+
+                  cycle_clock_instance := 2;
+                when 2 =>
+                  c_add_sub         <= '1';
+                  c_load            <= '0';
+                  c_load1           <= '1';
+                  c_load_P          <= '0';
+                  c_load_P2         <= '0';
+                  c_load_Q          <= '1';
+                  c_load_W          <= '1';
+                  c_sel             <= '1';
+                  bfy0_ip0_reg_load <= '1';
+                  bfy0_ip1_reg_load <= '1';
+                  bfy0_mux_sel      <= '0';
+                  bfy0_tw_reg_load  <= '1';
+                  bfy0_tw_sel       <= '0';
+                  bfy1_ip0_reg_load <= '1';
+                  bfy1_ip1_reg_load <= '1';
+                  bfy1_mux_sel      <= '0';
+                  bfy1_tw_reg_load  <= '1';
+                  bfy1_tw_sel       <= '0';
+                  
+                  cycle_clock_instance := 3;
+                when 3 =>
+                  c_add_sub         <= '0';
+                  c_load            <= '1';
+                  c_load1           <= '0';
+                  c_load_P          <= '0';
+                  c_load_P2         <= '1';
+                  c_load_Q          <= '0';
+                  c_load_W          <= '1';
+                  c_sel             <= '0';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
+                  bfy0_mux_sel      <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
+                  bfy1_mux_sel      <= '1';
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';
+                  
+                  cycle_clock_instance := 0;                  
+                when others => null;
+              end case;            
+
+            else
+
+              --When the pipeline is to be
+              --flushed no need to read fresh
+              --input values from the memory
+              SetA_RW <= '0';
+              SetB_RW <= '0';
+              done    <= '0';
+
+              --Perform add and subtract in the last two cycles of
+              --FFT computation corresponding to last two sample values
+              if pipe_line_flush = 1 then
+                
+                c_add_sub <= '1';
+
+              elsif pipe_line_flush = 0 then
+
+                c_add_sub <= '0';
+                
+              end if;
+
+              --No more butterfly computations are needed hence
+              --set the rest of the control signals to 0
+              c_load            <= '0';
+              c_load1           <= '0';
+              c_load_P          <= '0';
+              c_load_P2         <= '0';
+              c_load_Q          <= '0';
+              c_load_W          <= '0';
+              c_sel             <= '0';
+              bfy0_ip0_reg_load <= '0';
+              bfy0_ip1_reg_load <= '0';
+              bfy0_mux_sel      <= '0';
+              bfy0_tw_reg_load  <= '0';
+              bfy0_tw_sel       <= '0';
+              bfy1_ip0_reg_load <= '0';
+              bfy1_ip1_reg_load <= '0';
+              bfy1_mux_sel      <= '0';
+              bfy1_tw_reg_load  <= '0';
+              bfy1_tw_sel       <= '0';
+
+              if pipe_line_flush = 0 then
+
+                --move to the done state if all the FFT stages are completed
+                next_state <= S3;
+
+                else
+
+                  pipe_line_flush := pipe_line_flush - 1;
+
+                end if;
+
+            end if;
 
           when S2 =>
 
-            stage_iteration_count := stage_iteration_count - 1; --decrease iteration count by 1
+            if flush_pipeline = false then
+
+            --decrease iteration count by 1
+            stage_iteration_count := stage_iteration_count - 1;
 
               if stage_iteration_count = 0 then
 
-                stage_count := SHL(stage_count, "1"); --current stage is complete go to next stage
-                stage_iteration_count := SHR(N,"10"); --initialize the iteration count for the next stage
+                --current stage is complete, go to next stage
+                stage_count := SHL(stage_count, "1");
+                --initialize the iteration count for the next stage
+                stage_iteration_count := SHR(N,"01");
 
                 if stage_count /= N then
 
-                  next_state <= S1; --move to the next state after all the iterations are completed in the current state
+                  --move to the next state after all the iterations are
+                  --completed in the current state
+                  next_state <= S1;
 
                   else
-                    
-                    next_state <= S3; --move to the done state if all the FFT stages are completed
-                    
+
+                    --for the last two cycles in the last stage of
+                    --FFT there is a need to allow for the pipeline
+                    --to finish its computation                    
+                    flush_pipeline := true;
+                    pipe_line_flush := pipe_line_flush - 1;
+
                 end if;
-              
+
               end if;
 
-              SetA_RW <= '0'; --Set the output signals
+              --Set the output control signals
+              SetA_RW <= '0';
               SetB_RW <= '1';
-              done <= '0';
-            
+              done    <= '0';
+
+              case cycle_clock_instance is
+                when 0 =>
+                  c_add_sub         <= '1';
+                  c_load            <= '0';
+                  c_load1           <= '1';
+                  c_load_P          <= '0';
+                  c_load_P2         <= '0';
+                  c_load_Q          <= '1';
+                  c_load_W          <= '1';
+                  c_sel             <= '0';
+                  bfy0_ip0_reg_load <= '1';
+                  bfy0_ip1_reg_load <= '1';
+                  bfy0_mux_sel      <= '0';
+                  bfy0_tw_reg_load  <= '1';
+                  bfy0_tw_sel       <= '0';
+                  bfy1_ip0_reg_load <= '1';
+                  bfy1_ip1_reg_load <= '1';
+                  bfy1_mux_sel      <= '0';
+                  bfy1_tw_reg_load  <= '1';
+                  bfy1_tw_sel       <= '0';
+
+                  cycle_clock_instance := 1;
+                when 1 =>
+                  c_add_sub         <= '0';
+                  c_load            <= '1';
+                  c_load1           <= '0';
+                  c_load_P          <= '1';
+                  c_load_P2         <= '0';
+                  c_load_Q          <= '0';
+                  c_load_W          <= '1';
+                  c_sel             <= '1';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
+                  bfy0_mux_sel      <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
+                  bfy1_mux_sel      <= '1';
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';                  
+
+                  cycle_clock_instance := 2;
+                when 2 =>
+                  c_add_sub         <= '1';
+                  c_load            <= '0';
+                  c_load1           <= '1';
+                  c_load_P          <= '0';
+                  c_load_P2         <= '0';
+                  c_load_Q          <= '1';
+                  c_load_W          <= '1';
+                  c_sel             <= '1';
+                  bfy0_ip0_reg_load <= '1';
+                  bfy0_ip1_reg_load <= '1';
+                  bfy0_mux_sel      <= '0';
+                  bfy0_tw_reg_load  <= '1';
+                  bfy0_tw_sel       <= '0';
+                  bfy1_ip0_reg_load <= '1';
+                  bfy1_ip1_reg_load <= '1';
+                  bfy1_mux_sel      <= '0';
+                  bfy1_tw_reg_load  <= '1';
+                  bfy1_tw_sel       <= '0';
+
+                  cycle_clock_instance := 3;
+                when 3 =>
+                  c_add_sub         <= '0';
+                  c_load            <= '1';
+                  c_load1           <= '0';
+                  c_load_P          <= '0';
+                  c_load_P2         <= '1';
+                  c_load_Q          <= '0';
+                  c_load_W          <= '1';
+                  c_sel             <= '0';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
+                  bfy0_mux_sel      <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
+                  bfy1_mux_sel      <= '1';
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';                  
+
+                  cycle_clock_instance := 0;
+                when others => null;
+              end case;
+
+            else
+
+              --When the pipeline is to be
+              --flushed no need to read fresh
+              --input values from the memory              
+              SetA_RW <= '0';
+              SetB_RW <= '0';
+              done    <= '0';
+
+              --Perform add and subtract in the last two cycles of
+              --FFT computation corresponding to last two sample values              
+              if pipe_line_flush = 1 then
+                
+                c_add_sub <= '1';
+
+              elsif pipe_line_flush = 0 then
+
+                c_add_sub <= '0';
+                
+              end if;
+
+              --No more butterfly computations are needed hence
+              --set the rest of the control signals to 0
+              c_load            <= '0';
+              c_load1           <= '0';
+              c_load_P          <= '0';
+              c_load_P2         <= '0';
+              c_load_Q          <= '0';
+              c_load_W          <= '0';
+              c_sel             <= '0';
+              bfy0_ip0_reg_load <= '0';
+              bfy0_ip1_reg_load <= '0';
+              bfy0_mux_sel      <= '0';
+              bfy0_tw_reg_load  <= '0';
+              bfy0_tw_sel       <= '0';
+              bfy1_ip0_reg_load <= '0';
+              bfy1_ip1_reg_load <= '0';
+              bfy1_mux_sel      <= '0';
+              bfy1_tw_reg_load  <= '0';
+              bfy1_tw_sel       <= '0';
+
+              if pipe_line_flush = 0 then
+
+                --move to the done state if all the FFT stages are completed
+                next_state <= S3;
+
+                else
+
+                  pipe_line_flush := pipe_line_flush - 1;
+
+                end if;
+
+              end if;
+
           when others =>
-            
-            next_state <= S0; --after everything is done go to the reset state
-            SetA_RW <= '0';
-            SetB_RW <= '0';
-            done <= '1';
-                         
+
+            --after everything is done go to the reset state
+            next_state        <= S0;
+            SetA_RW           <= '0';
+            SetB_RW           <= '0';
+            done              <= '1';
+            c_add_sub         <= '0';
+            c_load            <= '0';
+            c_load1           <= '0';
+            c_load_P          <= '0';
+            c_load_P2         <= '0';
+            c_load_Q          <= '0';
+            c_load_W          <= '0';
+            c_sel             <= '0';
+            bfy0_ip0_reg_load <= '0';
+            bfy0_ip1_reg_load <= '0';
+            bfy0_mux_sel      <= '0';
+            bfy0_tw_reg_load  <= '0';
+            bfy0_tw_sel       <= '0';
+            bfy1_ip0_reg_load <= '0';
+            bfy1_ip1_reg_load <= '0';
+            bfy1_mux_sel      <= '0';
+            bfy1_tw_reg_load  <= '0';
+            bfy1_tw_sel       <= '0';
+
         end case;
-        
+
         end if;
-        
+
       end if;
 
-      current_state <= next_state; --update the current state
-      
+      --update the current state
+      current_state <= next_state;
+
     end process STATE_MACHINE;
 
 end control_unit_arch;
