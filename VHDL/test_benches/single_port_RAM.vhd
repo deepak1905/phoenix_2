@@ -5,7 +5,7 @@
 -- File       : single_port_RAM.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/08/14
+-- Last update: 2012/09/05
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Single port RAM module enables single clock read-write
@@ -33,11 +33,10 @@ entity single_port_RAM is
 
   port (
     clk      : in    std_logic;         -- clock signal
-    rw       : in    std_logic;
-                                        -- read-write control signal(0 = read, 1 = write)
-    addr_bus : in    std_logic_vector(ADDR_WIDTH-1 downto 0);
-                                        -- the address bus whose width is configurable at the design time
---    data_bus : inout integer range -32767 to 32767);           --the data bus carrying the data(upper 16 bits for real part of data and lower 16 bits is for imaginary part of data)
+    rw       : in    std_logic;         -- read-write control signal(0 = read, 1 = write)
+    addr_bus : in    std_logic_vector(ADDR_WIDTH-1 downto 0);   -- the address bus whose width is configurable at the design time
+    
+    --the data bus carrying the data(upper 16 bits for real part of data and lower 16 bits is for imaginary part of data)
     data_in : in std_logic_vector(DATA_WIDTH-1 downto 0);
     data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));
 

@@ -5,7 +5,7 @@
 -- File       : addr_gen_unit_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/08/03
+-- Last update: 2012/09/19
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Instantiates the address generation unit module for different
@@ -28,16 +28,17 @@ architecture addr_gen_unit_tb_arch of addr_gen_unit_tb is
 
   component addr_gen_unit
     generic (
-      N_width : integer);
+      ADDR_WIDTH : integer;
+      N_width    : integer);
     port (
       clk       : in  std_logic;
       rst       : in  std_logic;
       N         : in  std_logic_vector(N_width-1 downto 0);
       start     : in  std_logic;
-      count0    : out std_logic_vector(N_width-4 downto 0);
-      count1    : out std_logic_vector(N_width-4 downto 0);
-      store0   : out std_logic_vector(N_width-3 downto 0);
-      store1    : out std_logic_vector(N_width-3 downto 0);
+      count0    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      count1    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      store0   : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      store1    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
       Coef0Addr : out std_logic_vector(N_width-2 downto 0);
       Coef1Addr : out std_logic_vector(N_width-2 downto 0);
       done      : out std_logic);
@@ -52,8 +53,8 @@ architecture addr_gen_unit_tb_arch of addr_gen_unit_tb is
   signal tb_N_0 : std_logic_vector(3 downto 0) := (others => '0');  
   signal tb_count0_0 : std_logic_vector(0 downto 0) := (others => '0');
   signal tb_count1_0 : std_logic_vector(0 downto 0) := (others => '0');
-  signal tb_store0_0 : std_logic_vector(1 downto 0) := (others => '0');
-  signal tb_store1_0 : std_logic_vector(1 downto 0) := (others => '0');
+  signal tb_store0_0 : std_logic_vector(0 downto 0) := (others => '0');
+  signal tb_store1_0 : std_logic_vector(0 downto 0) := (others => '0');
   signal tb_Coef0Addr_0 : std_logic_vector(2 downto 0) := (others => '0');
   signal tb_Coef1Addr_0 : std_logic_vector(2 downto 0) := (others => '0');
   signal tb_done_0 : std_logic := '0';
@@ -62,8 +63,8 @@ architecture addr_gen_unit_tb_arch of addr_gen_unit_tb is
   signal tb_N_1 : std_logic_vector(4 downto 0) := (others => '0');  
   signal tb_count0_1 : std_logic_vector(1 downto 0) := (others => '0');
   signal tb_count1_1 : std_logic_vector(1 downto 0) := (others => '0');
-  signal tb_store0_1 : std_logic_vector(2 downto 0) := (others => '0');
-  signal tb_store1_1 : std_logic_vector(2 downto 0) := (others => '0');
+  signal tb_store0_1 : std_logic_vector(1 downto 0) := (others => '0');
+  signal tb_store1_1 : std_logic_vector(1 downto 0) := (others => '0');
   signal tb_Coef0Addr_1 : std_logic_vector(3 downto 0) := (others => '0');
   signal tb_Coef1Addr_1 : std_logic_vector(3 downto 0) := (others => '0');
   signal tb_done_1 : std_logic := '0';
@@ -72,8 +73,8 @@ architecture addr_gen_unit_tb_arch of addr_gen_unit_tb is
   signal tb_N_2 : std_logic_vector(5 downto 0) := (others => '0');  
   signal tb_count0_2 : std_logic_vector(2 downto 0) := (others => '0');
   signal tb_count1_2 : std_logic_vector(2 downto 0) := (others => '0');
-  signal tb_store0_2 : std_logic_vector(3 downto 0) := (others => '0');
-  signal tb_store1_2 : std_logic_vector(3 downto 0) := (others => '0');
+  signal tb_store0_2 : std_logic_vector(2 downto 0) := (others => '0');
+  signal tb_store1_2 : std_logic_vector(2 downto 0) := (others => '0');
   signal tb_Coef0Addr_2 : std_logic_vector(4 downto 0) := (others => '0');
   signal tb_Coef1Addr_2 : std_logic_vector(4 downto 0) := (others => '0');
   signal tb_done_2 : std_logic := '0';  
@@ -82,8 +83,8 @@ architecture addr_gen_unit_tb_arch of addr_gen_unit_tb is
   signal tb_N_3 : std_logic_vector(6 downto 0) := (others => '0');
   signal tb_count0_3 : std_logic_vector(3 downto 0) := (others => '0');
   signal tb_count1_3 : std_logic_vector(3 downto 0) := (others => '0');
-  signal tb_store0_3 : std_logic_vector(4 downto 0) := (others => '0');
-  signal tb_store1_3 : std_logic_vector(4 downto 0) := (others => '0');
+  signal tb_store0_3 : std_logic_vector(3 downto 0) := (others => '0');
+  signal tb_store1_3 : std_logic_vector(3 downto 0) := (others => '0');
   signal tb_Coef0Addr_3 : std_logic_vector(5 downto 0) := (others => '0');
   signal tb_Coef1Addr_3 : std_logic_vector(5 downto 0) := (others => '0');
   signal tb_done_3 : std_logic := '0';
@@ -91,7 +92,8 @@ architecture addr_gen_unit_tb_arch of addr_gen_unit_tb is
 begin  -- addr_gen_unit_tb_arch
 
   U0 : addr_gen_unit generic map (
-    N_width   => 4)
+    ADDR_WIDTH => 1,
+    N_width    => 4)
     port map (
     clk       => tb_clk,
     rst       => tb_rst,
@@ -106,7 +108,8 @@ begin  -- addr_gen_unit_tb_arch
     done      => tb_done_0);
     
   U1 : addr_gen_unit generic map (
-    N_width   => 5)
+    ADDR_WIDTH => 2,
+    N_width    => 5)
     port map (
     clk       => tb_clk,
     rst       => tb_rst,
@@ -121,7 +124,8 @@ begin  -- addr_gen_unit_tb_arch
     done      => tb_done_1);
     
   U2 : addr_gen_unit generic map (
-    N_width   => 6)
+    ADDR_WIDTH => 3,
+    N_width    => 6)
     port map (
     clk       => tb_clk,
     rst       => tb_rst,
@@ -136,7 +140,8 @@ begin  -- addr_gen_unit_tb_arch
     done      => tb_done_2);
   
   U3 : addr_gen_unit generic map (
-    N_width   => 7)
+    ADDR_WIDTH => 4,
+    N_width    => 7)
     port map (
     clk       => tb_clk,
     rst       => tb_rst,

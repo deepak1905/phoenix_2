@@ -5,7 +5,7 @@
 -- File       : interconnect_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/08/03
+-- Last update: 2012/09/19
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The test bench to test the interconnect which is a link
@@ -28,27 +28,30 @@ architecture interconnect_tb_arch of interconnect_tb is
 
   component interconnect
         generic (
-          N_width : integer);
+          ADDR_WIDTH : integer;
+          N_width    : integer;
+          DATA_WIDTH : integer);
+
         port (
           clk              : in  std_logic;
           rst              : in  std_logic;
           RW               : in  std_logic;
-          count0_i         : in  std_logic_vector(N_width-4 downto 0);
-          count1_i         : in  std_logic_vector(N_width-4 downto 0);
-          store0_i         : in  std_logic_vector(N_width-3 downto 0);
-          store1_i         : in  std_logic_vector(N_width-3 downto 0);
-          bfy0_add         : in  integer range -32767 to 32767;
-          bfy0_sub         : in  integer range -32767 to 32767;
-          bfy1_add         : in  integer range -32767 to 32767;
-          bfy1_sub         : in  integer range -32767 to 32767;
-          operand0_out_bfy : out integer range -32767 to 32767;
-          operand1_out_bfy : out integer range -32767 to 32767;
-          operand2_out_bfy : out integer range -32767 to 32767;
-          operand3_out_bfy : out integer range -32767 to 32767;
-          operand0_addr    : out std_logic_vector(N_width-3 downto 0);
-          operand1_addr    : out std_logic_vector(N_width-3 downto 0);
-          operand2_addr    : out std_logic_vector(N_width-3 downto 0);
-          operand3_addr    : out std_logic_vector(N_width-3 downto 0));
+          count0_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+          count1_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+          store0_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+          store1_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+          bfy0_add         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+          bfy0_sub         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+          bfy1_add         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+          bfy1_sub         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+          operand0_out_bfy : out std_logic_vector(DATA_WIDTH-1 downto 0);
+          operand1_out_bfy : out std_logic_vector(DATA_WIDTH-1 downto 0);
+          operand2_out_bfy : out std_logic_vector(DATA_WIDTH-1 downto 0);
+          operand3_out_bfy : out std_logic_vector(DATA_WIDTH-1 downto 0);
+          operand0_addr    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+          operand1_addr    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+          operand2_addr    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+          operand3_addr    : out std_logic_vector(ADDR_WIDTH-1 downto 0));
   end component;
   
       --For 8 point fft
@@ -61,35 +64,33 @@ architecture interconnect_tb_arch of interconnect_tb is
     signal tb_count1_i_1        : std_logic_vector(0 downto 0) := (others => '0');  -- operand address from address gen unit
     signal tb_count1_i_2        : std_logic_vector(1 downto 0) := (others => '0');  -- operand address from address gen unit
                                                                                     
-    signal tb_store0_i_1        : std_logic_vector(1 downto 0) := (others => '0');  -- write operand address from address gen unit
-    signal tb_store0_i_2        : std_logic_vector(2 downto 0) := (others => '0');  -- write operand address from address gen unit
+    signal tb_store0_i_1        : std_logic_vector(0 downto 0) := (others => '0');  -- write operand address from address gen unit
+    signal tb_store0_i_2        : std_logic_vector(1 downto 0) := (others => '0');  -- write operand address from address gen unit
                                                                                     
-    signal tb_store1_i_1        : std_logic_vector(1 downto 0) := (others => '0');  -- write operand address from address gen unit
-    signal tb_store1_i_2        : std_logic_vector(2 downto 0) := (others => '0');  -- write operand address from address gen unit  
+    signal tb_store1_i_1        : std_logic_vector(0 downto 0) := (others => '0');  -- write operand address from address gen unit
+    signal tb_store1_i_2        : std_logic_vector(1 downto 0) := (others => '0');  -- write operand address from address gen unit  
 
-    signal tb_bfy0_add_1, tb_bfy0_add_2        : integer range -32767 to 32767 := 0;  -- result of addition from butterfly0 unit
-    signal tb_bfy0_sub_1, tb_bfy0_sub_2        : integer range -32767 to 32767 := 0;  -- result of subtraction from butterfly0 unit
-    signal tb_bfy1_add_1, tb_bfy1_add_2        : integer range -32767 to 32767 := 0;  -- result of addition from butterfly1 unit
-    signal tb_bfy1_sub_1, tb_bfy1_sub_2        : integer range -32767 to 32767 := 0;  -- result of subtraction from butterfly1 unit
+    signal tb_bfy0_add_1, tb_bfy0_add_2        : std_logic_vector(31 downto 0) := (others => '0');  -- result of addition from butterfly0 unit
+    signal tb_bfy0_sub_1, tb_bfy0_sub_2        : std_logic_vector(31 downto 0) := (others => '0');  -- result of subtraction from butterfly0 unit
+    signal tb_bfy1_add_1, tb_bfy1_add_2        : std_logic_vector(31 downto 0) := (others => '0');  -- result of addition from butterfly1 unit
+    signal tb_bfy1_sub_1, tb_bfy1_sub_2        : std_logic_vector(31 downto 0) := (others => '0');  -- result of subtraction from butterfly1 unit
 
-    --NOTE: (NOTE:store addr is 1 bit bigger than count addr hence o/p addr of
-    --interconnect is of the same size as that of store addr
-    signal tb_operand0_addr_1   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 0
-    signal tb_operand0_addr_2   : std_logic_vector(2 downto 0) := (others => '0');  -- address of operand 0
+    signal tb_operand0_addr_1   : std_logic_vector(0 downto 0) := (others => '0');  -- address of operand 0
+    signal tb_operand0_addr_2   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 0
                                                                                     
-    signal tb_operand1_addr_1   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 1
-    signal tb_operand1_addr_2   : std_logic_vector(2 downto 0) := (others => '0');  -- address of operand 1
+    signal tb_operand1_addr_1   : std_logic_vector(0 downto 0) := (others => '0');  -- address of operand 1
+    signal tb_operand1_addr_2   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 1
                                                                                     
-    signal tb_operand2_addr_1   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 2
-    signal tb_operand2_addr_2   : std_logic_vector(2 downto 0) := (others => '0');  -- address of operand 2
+    signal tb_operand2_addr_1   : std_logic_vector(0 downto 0) := (others => '0');  -- address of operand 2
+    signal tb_operand2_addr_2   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 2
                                                                                     
-    signal tb_operand3_addr_1   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 3
-    signal tb_operand3_addr_2   : std_logic_vector(2 downto 0) := (others => '0');  -- address of operand 3  
+    signal tb_operand3_addr_1   : std_logic_vector(0 downto 0) := (others => '0');  -- address of operand 3
+    signal tb_operand3_addr_2   : std_logic_vector(1 downto 0) := (others => '0');  -- address of operand 3  
 
-    signal tb_operand0_out_bfy_1, tb_operand0_out_bfy_2 : integer range -32767 to 32767 := 0;  -- input operand 0 to butterfly units
-    signal tb_operand1_out_bfy_1, tb_operand1_out_bfy_2 : integer range -32767 to 32767 := 0;  -- input operand 1 to butterfly units
-    signal tb_operand2_out_bfy_1, tb_operand2_out_bfy_2 : integer range -32767 to 32767 := 0;  -- input operand 2 to butterfly units
-    signal tb_operand3_out_bfy_1, tb_operand3_out_bfy_2 : integer range -32767 to 32767 := 0;  -- input operand 3 to butterfly units
+    signal tb_operand0_out_bfy_1, tb_operand0_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');  -- input operand 0 to butterfly units
+    signal tb_operand1_out_bfy_1, tb_operand1_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');  -- input operand 1 to butterfly units
+    signal tb_operand2_out_bfy_1, tb_operand2_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');  -- input operand 2 to butterfly units
+    signal tb_operand3_out_bfy_1, tb_operand3_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');  -- input operand 3 to butterfly units
     constant half_clk_period : time := 10 ns;
     constant end_simulation : boolean := false;
   
@@ -101,23 +102,23 @@ architecture interconnect_tb_arch of interconnect_tb is
 
     --calculate the output of the interconnect in the scope of the test bench
     --inorder to validate the output of design under test i.e interconnect block
-    signal validate_operand0_addr_1 : std_logic_vector(1 downto 0) := (others => '0');
-    signal validate_operand0_addr_2 : std_logic_vector(2 downto 0) := (others => '0');  
+    signal validate_operand0_addr_1 : std_logic_vector(0 downto 0) := (others => '0');
+    signal validate_operand0_addr_2 : std_logic_vector(1 downto 0) := (others => '0');  
   
-    signal validate_operand1_addr_1 : std_logic_vector(1 downto 0) := (others => '0');
-    signal validate_operand1_addr_2 : std_logic_vector(2 downto 0) := (others => '0');
+    signal validate_operand1_addr_1 : std_logic_vector(0 downto 0) := (others => '0');
+    signal validate_operand1_addr_2 : std_logic_vector(1 downto 0) := (others => '0');
 
-    signal validate_operand2_addr_1 : std_logic_vector(1 downto 0) := (others => '0');
-    signal validate_operand2_addr_2 : std_logic_vector(2 downto 0) := (others => '0');
+    signal validate_operand2_addr_1 : std_logic_vector(0 downto 0) := (others => '0');
+    signal validate_operand2_addr_2 : std_logic_vector(1 downto 0) := (others => '0');
   
-    signal validate_operand3_addr_1 : std_logic_vector(1 downto 0) := (others => '0');
-    signal validate_operand3_addr_2 : std_logic_vector(2 downto 0) := (others => '0');  
+    signal validate_operand3_addr_1 : std_logic_vector(0 downto 0) := (others => '0');
+    signal validate_operand3_addr_2 : std_logic_vector(1 downto 0) := (others => '0');  
 
     --data output routed by the interconnect
-    signal validate_operand0_out_bfy_1, validate_operand0_out_bfy_2 : integer range -32767 to 32767 := 0;
-    signal validate_operand1_out_bfy_1, validate_operand1_out_bfy_2 : integer range -32767 to 32767 := 0;
-    signal validate_operand2_out_bfy_1, validate_operand2_out_bfy_2 : integer range -32767 to 32767 := 0;
-    signal validate_operand3_out_bfy_1, validate_operand3_out_bfy_2 : integer range -32767 to 32767 := 0;
+    signal validate_operand0_out_bfy_1, validate_operand0_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');
+    signal validate_operand1_out_bfy_1, validate_operand1_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');
+    signal validate_operand2_out_bfy_1, validate_operand2_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');
+    signal validate_operand3_out_bfy_1, validate_operand3_out_bfy_2 : std_logic_vector(31 downto 0) := (others => '0');
 
 begin  -- interconnect_tb_arch
 
@@ -125,7 +126,9 @@ begin  -- interconnect_tb_arch
   --8 point FFT
 --     U0: interconnect
 --       generic map (
---         N_width => 4)
+--         ADDR_WIDTH => 1,
+--         N_width    => 4,
+--         DATA_WIDTH => 32)
 --       port map (
 --         clk              => tb_clk,
 --         rst              => tb_rst,
@@ -151,7 +154,10 @@ begin  -- interconnect_tb_arch
      --16 point FFT
        U1: interconnect
          generic map (
-           N_width => 5)
+           ADDR_WIDTH => 2,
+           N_width    => 5,
+           DATA_WIDTH => 32)
+         
          port map (
            clk              => tb_clk,
            rst              => tb_rst,
@@ -333,12 +339,12 @@ begin  -- interconnect_tb_arch
                   --signals to be fed into the interconnect module
                   tb_count0_i_2 <= conv_std_logic_vector(ct0, 2);
                   tb_count1_i_2 <= conv_std_logic_vector(ct1, 2);
-                  tb_store0_i_2 <= conv_std_logic_vector(st0, 3);
-                  tb_store1_i_2 <= conv_std_logic_vector(st1, 3);
-                  tb_bfy0_add_2 <= bfy0_add;
-                  tb_bfy0_sub_2 <= bfy0_sub;
-                  tb_bfy1_add_2 <= bfy1_add;
-                  tb_bfy1_sub_2 <= bfy1_sub;
+                  tb_store0_i_2 <= conv_std_logic_vector(st0, 2);
+                  tb_store1_i_2 <= conv_std_logic_vector(st1, 2);
+                  tb_bfy0_add_2 <= conv_std_logic_vector(bfy0_add, 32);
+                  tb_bfy0_sub_2 <= conv_std_logic_vector(bfy0_sub, 32);
+                  tb_bfy1_add_2 <= conv_std_logic_vector(bfy1_add, 32);
+                  tb_bfy1_sub_2 <= conv_std_logic_vector(bfy1_sub, 32);
 
                   var_ct0 := conv_std_logic_vector(ct0,2);                  
                   var_ct1 := conv_std_logic_vector(ct1,2);
@@ -346,27 +352,27 @@ begin  -- interconnect_tb_arch
                   --compute the expected output values(operand addresses) from
                   --the interconnect which are to be validated for correctness
                   if rw = 0 then
-                    validate_operand0_addr_2 <= '0' & conv_std_logic_vector(ct0, 2);
-                    validate_operand1_addr_2 <= '0' & conv_std_logic_vector(ct0, 2);
-                    validate_operand2_addr_2 <= '0' & conv_std_logic_vector(ct1, 2);
-                    validate_operand3_addr_2 <= '0' & conv_std_logic_vector(ct1, 2);
+                    validate_operand0_addr_2 <= conv_std_logic_vector(ct0, 2);
+                    validate_operand1_addr_2 <= conv_std_logic_vector(ct0, 2);
+                    validate_operand2_addr_2 <= conv_std_logic_vector(ct1, 2);
+                    validate_operand3_addr_2 <= conv_std_logic_vector(ct1, 2);
                     else
 
                       if var_ct0(0) = '0' then
-                        validate_operand0_addr_2 <= conv_std_logic_vector(st0, 3);
-                        validate_operand2_addr_2 <= conv_std_logic_vector(st0, 3);
+                        validate_operand0_addr_2 <= conv_std_logic_vector(st0, 2);
+                        validate_operand2_addr_2 <= conv_std_logic_vector(st0, 2);
                         else
-                          validate_operand0_addr_2 <= conv_std_logic_vector(st1, 3);
-                          validate_operand2_addr_2 <= conv_std_logic_vector(st1, 3);
+                          validate_operand0_addr_2 <= conv_std_logic_vector(st1, 2);
+                          validate_operand2_addr_2 <= conv_std_logic_vector(st1, 2);
                       end if;
 
 
                       if var_ct1(0) = '0' then
-                        validate_operand1_addr_2 <= conv_std_logic_vector(st0, 3);
-                        validate_operand3_addr_2 <= conv_std_logic_vector(st0, 3);
+                        validate_operand1_addr_2 <= conv_std_logic_vector(st0, 2);
+                        validate_operand3_addr_2 <= conv_std_logic_vector(st0, 2);
                         else
-                          validate_operand1_addr_2 <= conv_std_logic_vector(st1, 3);
-                          validate_operand3_addr_2 <= conv_std_logic_vector(st1, 3);
+                          validate_operand1_addr_2 <= conv_std_logic_vector(st1, 2);
+                          validate_operand3_addr_2 <= conv_std_logic_vector(st1, 2);
                       end if;
                       
                   end if;
@@ -374,19 +380,19 @@ begin  -- interconnect_tb_arch
                   --compute the expected output values(operand data) from
                   --the interconnect which are to be validated for correctness
                   if var_ct0(0) = '0' then
-                    validate_operand0_out_bfy_2 <= bfy0_add;
-                    validate_operand2_out_bfy_2 <= bfy0_sub;
+                    validate_operand0_out_bfy_2 <= conv_std_logic_vector(bfy0_add, 32);
+                    validate_operand2_out_bfy_2 <= conv_std_logic_vector(bfy0_sub, 32);
                     else
-                      validate_operand0_out_bfy_2 <= bfy1_add;
-                      validate_operand2_out_bfy_2 <= bfy1_sub;
+                      validate_operand0_out_bfy_2 <= conv_std_logic_vector(bfy1_add, 32);
+                      validate_operand2_out_bfy_2 <= conv_std_logic_vector(bfy1_sub, 32);
                   end if;
 
                   if var_ct1(0) = '0' then
-                    validate_operand1_out_bfy_2 <= bfy0_add;
-                    validate_operand3_out_bfy_2 <= bfy0_sub;
+                    validate_operand1_out_bfy_2 <= conv_std_logic_vector(bfy0_add, 32);
+                    validate_operand3_out_bfy_2 <= conv_std_logic_vector(bfy0_sub, 32);
                     else
-                      validate_operand1_out_bfy_2 <= bfy1_add;
-                      validate_operand3_out_bfy_2 <= bfy1_sub;
+                      validate_operand1_out_bfy_2 <= conv_std_logic_vector(bfy1_add, 32);
+                      validate_operand3_out_bfy_2 <= conv_std_logic_vector(bfy1_sub, 32);
                   end if;
 
                   --wait for the results to be available

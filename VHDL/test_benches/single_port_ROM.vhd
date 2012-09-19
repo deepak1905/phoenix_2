@@ -5,7 +5,7 @@
 -- File       : single_port_ROM.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/08/14
+-- Last update: 2012/09/05
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Single port ROM module enables single clock read
@@ -26,13 +26,14 @@ entity single_port_ROM is
   
   generic (
     ADDR_WIDTH : integer := 5;         -- the width of address bus configurable at the design time(default width for 64 point
-                                       -- FFT  which requires storing 32 twiddle factors per bank
+                                       -- FFT  which requires storing 32 twiddle factors per bank)
     DATA_WIDTH : integer := 32);         
 
   port (
     clk      : in    std_logic;         -- clock signal
     addr_bus : in    std_logic_vector(ADDR_WIDTH-1 downto 0);  -- the address bus whose width is configurable at the design time
-    data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));   --the data bus carrying the data(upper 16 bits for real part of data and lower 16 bits is for imaginary part of data)
+    --the data bus carrying the data(upper 16 bits for real part of data and lower 16 bits is for imaginary part of data)    
+    data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));
                                         
 end single_port_ROM;
 
