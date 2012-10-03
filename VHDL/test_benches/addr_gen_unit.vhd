@@ -5,7 +5,7 @@
 -- File       : addr_gen_unit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/09/19
+-- Last update: 2012/09/23
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The address generation unit generates following addresses in
@@ -43,8 +43,8 @@ entity addr_gen_unit is
     count1    : out std_logic_vector(ADDR_WIDTH-1 downto 0);  --Address of memory banks to read next two input values to the butterfly units
     store0    : out std_logic_vector(ADDR_WIDTH-1 downto 0);  --Address of memory banks to write output values from butterfly units
     store1    : out std_logic_vector(ADDR_WIDTH-1 downto 0);  --Address of memory banks to write output values from butterfly units
-    Coef0Addr : out std_logic_vector(N_width-2 downto 0);  --Coefficient address for the first butterfly unit
-    Coef1Addr : out std_logic_vector(N_width-2 downto 0);  --Coefficient address for the second butterfly unit
+    Coef0Addr : out std_logic_vector(ADDR_WIDTH+1 downto 0);  --Coefficient address for the first butterfly unit
+    Coef1Addr : out std_logic_vector(ADDR_WIDTH+1 downto 0);  --Coefficient address for the second butterfly unit
     done      : out std_logic);
 
 end addr_gen_unit;
@@ -55,7 +55,7 @@ architecture addr_gen_unit_arch of addr_gen_unit is
   signal s_count0 : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
   -- flag indicating that address generation is in progress
   signal addr_gen_on : std_logic := '0';
-  constant zero_value : std_logic_vector(N_width-2 downto 0) := (others => '0');
+  constant zero_value : std_logic_vector(ADDR_WIDTH+1 downto 0) := (others => '0');
   --stage counter, it runs like 0,1,2,3 etc  
   signal s_stage_counter : integer := 0;
                                           
@@ -67,8 +67,8 @@ CLK_PROCESS: process(clk, rst)
   --number of iterations per stage = N/4  
   variable stage_iteration_count : std_logic_vector(N_width-1 downto 0) := (others => '0');
   --count of the number of stages while computing FFT(counts by shifting bit position to the left after each stage)  
-  variable stage_count : std_logic_vector(N_width-1 downto 0) := (others => '0');  
-  variable coef : std_logic_vector(N_width-2 downto 0) := (others => '0');
+  variable stage_count : std_logic_vector(N_width-1 downto 0) := (others => '0');
+  variable coef : std_logic_vector(ADDR_WIDTH+1 downto 0) := (others => '0');
   variable addr_gen_freq : integer := 1;  -- the addresses are generated every two clock cycles
   variable last_stage : boolean := false;  -- to retain the values of counts and stores for one extra cycle in the last stage
     
@@ -110,10 +110,12 @@ CLK_PROCESS: process(clk, rst)
           s_count0  <= s_count0 + 1;
           coef      := "00" & s_count0;
           --Generate address for first coefficient
-          Coef0Addr <= coef(N_width-2 downto N_width-2-s_stage_counter) & zero_value(N_width-3-s_stage_counter downto 0);
+--          Coef0Addr <= coef(N_width-2 downto N_width-2-s_stage_counter) & zero_value(N_width-3-s_stage_counter downto 0);
+          Coef0Addr <= coef(ADDR_WIDTH+1 downto ADDR_WIDTH+1-s_stage_counter) & zero_value(ADDR_WIDTH-s_stage_counter downto 0);          
           coef      := "01" & (not s_count0);
           --Generate address for the next coefficient
-          Coef1Addr <= coef(N_width-2 downto N_width-2-s_stage_counter) & zero_value(N_width-3-s_stage_counter downto 0);
+--          Coef1Addr <= coef(N_width-2 downto N_width-2-s_stage_counter) & zero_value(N_width-3-s_stage_counter downto 0);
+          Coef1Addr <= coef(ADDR_WIDTH+1 downto ADDR_WIDTH+1-s_stage_counter) & zero_value(ADDR_WIDTH-s_stage_counter downto 0);          
 
           stage_iteration_count := stage_iteration_count - 1;
 
