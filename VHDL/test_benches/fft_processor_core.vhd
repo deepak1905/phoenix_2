@@ -5,7 +5,7 @@
 -- File       : fft_processor_core.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/09/19
+-- Last update: 2012/10/02
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The core of fft computation involving butterfly unit, control
@@ -98,19 +98,20 @@ architecture rtl of fft_core is
   --Address generation unit
   component addr_gen_unit
     generic (
-      N_width : integer);
+      ADDR_WIDTH : integer;
+      N_width    : integer);
 
     port (
       clk       : in  std_logic;
       rst       : in  std_logic;
       N         : in  std_logic_vector(N_width-1 downto 0);
       start     : in  std_logic;
-      count0    : out std_logic_vector(N_width-4 downto 0);
-      count1    : out std_logic_vector(N_width-4 downto 0);
-      store0    : out std_logic_vector(N_width-3 downto 0);
-      store1    : out std_logic_vector(N_width-3 downto 0);
-      Coef0Addr : out std_logic_vector(N_width-2 downto 0);
-      Coef1Addr : out std_logic_vector(N_width-2 downto 0);
+      count0    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      count1    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      store0    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      store1    : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+      Coef0Addr : out std_logic_vector(ADDR_WIDTH+1 downto 0);
+      Coef1Addr : out std_logic_vector(ADDR_WIDTH+1 downto 0);
       done      : out std_logic);
   end component;
 
@@ -159,10 +160,10 @@ architecture rtl of fft_core is
       clk              : in  std_logic;
       rst              : in  std_logic;
       RW               : in  std_logic;
-      count0_i         : in  std_logic_vector(N_width-4 downto 0);
-      count1_i         : in  std_logic_vector(N_width-4 downto 0);
-      store0_i         : in  std_logic_vector(N_width-3 downto 0);
-      store1_i         : in  std_logic_vector(N_width-3 downto 0);
+      count0_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+      count1_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+      store0_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+      store1_i         : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       bfy0_add         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
       bfy0_sub         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
       bfy1_add         : in  std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -241,7 +242,7 @@ architecture rtl of fft_core is
   --Address generation unit signals
   signal s_count0, s_count1 : std_logic_vector(ADDR_WIDTH-1 downto 0);
   signal s_store0, s_store1 : std_logic_vector(ADDR_WIDTH-1 downto 0);
-  signal s_Coef0Addr, s_Coef1Addr : std_logic_vector(N_WIDTH-2 downto 0);
+  signal s_Coef0Addr, s_Coef1Addr : std_logic_vector(ADDR_WIDTH+1 downto 0);
   signal s_done : std_logic;
 
   --Multiplexers at butterfly inputs
@@ -590,7 +591,8 @@ begin  -- rtl
   --as redundant?
   U8: addr_gen_unit
     generic map (
-      N_width => N_WIDTH)
+      ADDR_WIDTH => ADDR_WIDTH,
+      N_width    => N_WIDTH)
 
     port map (
       clk       => clk,
@@ -628,7 +630,7 @@ begin  -- rtl
       operand1_out_bfy => dout1,
       operand2_out_bfy => dout2,
       operand3_out_bfy => dout3,
-      operand0_addr    => addr0,
+      operand0_addr    => addr0,      
       operand1_addr    => addr1,
       operand2_addr    => addr2,
       operand3_addr    => addr3);
