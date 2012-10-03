@@ -5,7 +5,7 @@
 -- File       : fft_core_top_level.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/09/19
+-- Last update: 2012/10/03
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The interface of N-point FFT processor core with the memory
@@ -23,23 +23,12 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use std.textio.all;
 
 
 entity fft_core_top_level is
   
-  generic (
-    N_WIDTH    : integer := 7;          -- by default support 64 point FFT
-    ADDR_WIDTH : integer := 4;
-    DATA_WIDTH : integer := 32);         -- upper 16 bits for real part and
-                                         -- the lower 16 bits for imaginary part
-
-  port (
-    clk   : in  std_logic;              -- input clock signal
-    rst   : in  std_logic;              -- asynchronous active high reset
-    N     : in  std_logic_vector(N_WIDTH-1 downto 0);  -- Number of FFT points
-    start : in  std_logic;              -- start signal to indicate the start of computation
-    done  : out std_logic);             -- Indicate the end of FFT computation
-
 end fft_core_top_level;
 
 architecture rtl of fft_core_top_level is
@@ -109,6 +98,7 @@ architecture rtl of fft_core_top_level is
   --RAM unit
   component single_port_RAM
     generic (
+      FILE_NAME  : string;
       ADDR_WIDTH : integer;
       DATA_WIDTH : integer);
     port (
@@ -122,6 +112,7 @@ architecture rtl of fft_core_top_level is
   --ROM unit
   component single_port_ROM
     generic (
+      FILE_NAME  : string;
       ADDR_WIDTH : integer;
       DATA_WIDTH : integer);
     port (
@@ -131,43 +122,55 @@ architecture rtl of fft_core_top_level is
   end component;
 
   -- Signal declarations
+  constant DATA_WIDTH : integer := 32;
+  constant RAM_ADDR_WIDTH : integer := 1;   --8 point FFT, 2 points per bank hence
+                                        --1 bit address
+  constant ROM_ADDR_WIDTH : integer := 2;
+  
   signal s_din0, s_dout0 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr0 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr0 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw0 : std_logic;
 
   signal s_din1, s_dout1 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr1 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr1 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw1 : std_logic;
 
   signal s_din2, s_dout2 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr2 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr2 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw2 : std_logic;
 
   signal s_din3, s_dout3 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr3 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr3 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw3 : std_logic;
 
   signal s_din4, s_dout4 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr4 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr4 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw4 : std_logic;
   
   signal s_din5, s_dout5 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr5 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr5 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw5 : std_logic;
 
   signal s_din6, s_dout6 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr6 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr6 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw6 : std_logic;  
 
   signal s_din7, s_dout7 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr7 : std_logic_vector(ADDR_WIDTH-1 downto 0);
+  signal s_addr7 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
   signal s_rw7 : std_logic;
 
   signal s_din8 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr8 : std_logic_vector(ADDR_WIDTH downto 0);
+  signal s_addr8 : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
 
   signal s_din9 : std_logic_vector(DATA_WIDTH-1 downto 0);
-  signal s_addr9 : std_logic_vector(ADDR_WIDTH downto 0);
+  signal s_addr9 : std_logic_vector(ROM_ADDR_WIDTH-1 downto 0);
+
+  --Input signals to the core
+  signal s_clk, s_rst, s_start : std_logic := '0';
+  signal s_done : std_logic;
+  signal s_N_8 : std_logic_vector(3 downto 0) := "1000";  -- 8 point FFT
+  signal dataread : integer;
+  signal init_done, is_file_open : boolean := false;
 
 begin  -- rtl
 
@@ -176,11 +179,12 @@ begin  -- rtl
   --RAM0
   U0: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_0.txt",
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw0,
       addr_bus => s_addr0,
       data_in  => s_dout0,
@@ -189,11 +193,12 @@ begin  -- rtl
     --RAM1
   U1: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_1.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw1,
       addr_bus => s_addr1,
       data_in  => s_dout1,
@@ -202,11 +207,12 @@ begin  -- rtl
   --RAM2  
   U2: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_2.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw2,
       addr_bus => s_addr2,
       data_in  => s_dout2,
@@ -215,11 +221,12 @@ begin  -- rtl
   --RAM3  
   U3: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_3.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw3,
       addr_bus => s_addr3,
       data_in  => s_dout3,
@@ -228,11 +235,12 @@ begin  -- rtl
   --RAM4
   U4: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_4.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw4,
       addr_bus => s_addr4,
       data_in  => s_dout4,
@@ -241,11 +249,12 @@ begin  -- rtl
   --RAM5  
   U5: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_5.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw5,
       addr_bus => s_addr5,
       data_in  => s_dout5,
@@ -254,11 +263,12 @@ begin  -- rtl
   --RAM6  
   U6: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_6.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw6,
       addr_bus => s_addr6,
       data_in  => s_dout6,
@@ -267,11 +277,12 @@ begin  -- rtl
   --RAM7  
   U7: single_port_RAM
     generic map (
-      ADDR_WIDTH => 4,
+      FILE_NAME  => "ram_7.txt",      
+      ADDR_WIDTH => RAM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       rw       => s_rw7,
       addr_bus => s_addr7,
       data_in  => s_dout7,
@@ -280,37 +291,40 @@ begin  -- rtl
   --ROM0
   U8: single_port_ROM
     generic map (
-      ADDR_WIDTH => 5,
+      FILE_NAME  => "rom.txt",
+      ADDR_WIDTH => ROM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       addr_bus => s_addr8,
       data_out => s_din8);
 
   --ROM1
   U9: single_port_ROM
     generic map (
-      ADDR_WIDTH => 5,
+      FILE_NAME  => "rom.txt",
+      ADDR_WIDTH => ROM_ADDR_WIDTH,
       DATA_WIDTH => 32)
 
     port map (
-      clk      => clk,
+      clk      => s_clk,
       addr_bus => s_addr9,
       data_out => s_din9);
 
+  --8 point FFT core instantiation
  U10: fft_core
    generic map (
-     N_WIDTH    => 7,
-     ADDR_WIDTH => 4,
+     N_WIDTH    => 4,
+     ADDR_WIDTH => RAM_ADDR_WIDTH,
      DATA_WIDTH => 32)
 
    port map (
-     clk   => clk,
-     rst   => rst,
-     start => start,
-     N     => N,
-     done  => done,
+     clk   => s_clk,
+     rst   => s_rst,
+     start => s_start,
+     N     => s_N_8,
+     done  => s_done,
 
      din0  => s_din0,
      dout0 => s_dout0,
@@ -357,5 +371,12 @@ begin  -- rtl
 
      din9  => s_din9,
      addr9 => s_addr9 );
+
+  --generate clk, rst signals
+  s_clk <= not s_clk after 10 ns;
+  s_rst <= '1' after 30 ns, '0' after 60 ns;
+
+  --provide go signal to start the FFT computation
+  s_start <= '1' after 90 ns, '0' after 130 ns;
 
 end rtl;
