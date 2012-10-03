@@ -5,7 +5,7 @@
 -- File       : single_port_RAM.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/09/05
+-- Last update: 2012/10/03
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Single port RAM module enables single clock read-write
@@ -18,14 +18,15 @@
 
 --Include necessary library and
 --packages
-library ieee;
+library ieee, std;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
-use ieee.std_logic_textio.all;
+use std.textio.all;
 
 entity single_port_RAM is
   
   generic (
+    FILE_NAME  : string  := "ram_0.txt";
     ADDR_WIDTH : integer := 4;
     DATA_WIDTH : integer := 32);         -- the width of address bus configurable at the design time(
                                         -- default width for 64 point FFT which
@@ -47,7 +48,45 @@ architecture rtl of single_port_RAM is
 
   subtype ram_word is std_logic_vector(DATA_WIDTH-1 downto 0);
   type RAM_memory is array ((2**ADDR_WIDTH)-1 downto 0) of ram_word;
-  signal RAM_memory_bank : RAM_memory;
+
+  impure function initialize_RAM(file_name : string)
+    return RAM_memory is
+
+    file file_handle : text;
+    variable lineread : line;
+--    variable dataread : std_logic_vector(DATA_WIDTH-1 downto 0);
+    variable dataread : integer;
+    variable ram_mem : RAM_memory;
+    variable is_open : boolean := false;
+
+  begin
+
+    if is_open = false then
+
+    file_open(file_handle, file_name, READ_MODE);
+    is_open := true;
+
+    end if;
+
+      --for 8 point FFT
+      for i in 0 to 1 loop
+
+        if (not endfile(file_handle)) then
+          
+          readline(file_handle, lineread);
+          read(lineread, dataread);
+          ram_mem(i) := conv_std_logic_vector(dataread, DATA_WIDTH);
+
+        end if;      
+
+      end loop;
+
+      file_close(file_handle);
+      return ram_mem;
+      
+    end function initialize_RAM;
+
+  signal RAM_memory_bank : RAM_memory := initialize_RAM(FILE_NAME);
 
   begin
 
