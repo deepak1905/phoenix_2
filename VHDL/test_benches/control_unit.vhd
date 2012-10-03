@@ -5,7 +5,7 @@
 -- File       : control_unit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/09/18
+-- Last update: 2012/10/03
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Control unit generates the control signal required to carry
@@ -43,8 +43,8 @@ entity control_unit is
     c_load_Q          : out std_logic;          -- load Q register input - control signal
     c_load_W          : out std_logic;          -- load W register input - control signal
     c_sel             : out std_logic;          -- select PR, PI mux control signal
-    SetA_RW           : out std_logic;          -- interconnect A RW signal
-    SetB_RW           : out std_logic;          -- interconnect B RW signal
+    SetA_RW           : out std_logic;          -- interconnect A RW signal('0' - read, '1' - write)
+    SetB_RW           : out std_logic;          -- interconnect B RW signal('0' - read, '1' - write)
     bfy0_ip0_reg_load : out std_logic;          -- butterfly unit0 input0 register load
     bfy0_ip1_reg_load : out std_logic;          -- butterfly unit0 input1 register load
     bfy0_mux_sel      : out std_logic;          -- butterfly unit0 input(Q/P) sel
@@ -77,7 +77,7 @@ begin  -- control_unit_arch
 
     -- clock cycle instance during piplined execution in butterfly
     variable cycle_clock_instance : integer range 0 to 3 := 0;
-    -- allow three more cycles to flush the pipeline in
+    -- allow two more cycles to flush the pipeline in
     -- the final stage of FFT computation
     variable pipe_line_flush : integer := 2;
     -- flag indicating whether pipeline flush is required or not
@@ -179,8 +179,8 @@ begin  -- control_unit_arch
               end if;
 
               --Set the output control signals
-              SetA_RW <= '1';
-              SetB_RW <= '0';
+              SetA_RW <= '0';
+              SetB_RW <= '1';
               done    <= '0';
 
               case cycle_clock_instance is
@@ -358,8 +358,8 @@ begin  -- control_unit_arch
               end if;
 
               --Set the output control signals
-              SetA_RW <= '0';
-              SetB_RW <= '1';
+              SetA_RW <= '1';
+              SetB_RW <= '0';
               done    <= '0';
 
               case cycle_clock_instance is
