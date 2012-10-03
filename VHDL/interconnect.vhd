@@ -5,7 +5,7 @@
 -- File       : interconnect.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/09/19
+-- Last update: 2012/10/02
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The interconnect which routes operand address to RAM modules
@@ -74,14 +74,15 @@ begin  -- interconnect_arch
 
       if rst = '1' then
 
-        --Do nothing on reset
+        --Do nothing
 
       elsif clk'event and clk = '1' then
 
         --update the storex values(intermediate signals)
         --and output operand values based on the first
         --bit of input count0 address
-        case count0_i(0) is
+
+      case count0_i(0) is
           when  '0' =>
             
             storex_0 := store0_i;
@@ -96,7 +97,7 @@ begin  -- interconnect_arch
             storex_2 := store1_i;
 
             operand0_out_bfy <= bfy1_add;
-            operand2_out_bfy <= bfy1_sub;                        
+            operand2_out_bfy <= bfy1_sub;
             
           when others => null;
         end case;
