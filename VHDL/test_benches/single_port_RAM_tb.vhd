@@ -5,7 +5,7 @@
 -- File       : single_port_RAM_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/08/14
+-- Last update: 2012/09/22
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Test bench to test the RAM module with different combinations
@@ -34,13 +34,13 @@ architecture stimulus of single_port_RAM_tb is
     generic (
       ADDR_WIDTH : integer;
       DATA_WIDTH : integer);
-    
+
     port (
       clk      : in    std_logic;
       rw       : in    std_logic;
       addr_bus : in    std_logic_vector(ADDR_WIDTH-1 downto 0);
       data_in : in std_logic_vector(DATA_WIDTH-1 downto 0);
-      data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));    
+      data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));
   end component;
 
   --Declare the necessary signals
