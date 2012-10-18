@@ -5,7 +5,7 @@
 -- File       : reg_n_bit_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/09/13
+-- Last update: 2012/10/17
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Test bench for the register
@@ -57,7 +57,7 @@ begin  -- rtl
       data_out => s_data_out);
 
   s_clk <= not s_clk after 10 ns;
-  s_rst <= '1' after 30 ns, '0' after 50 ns;
+  s_rst <= '0' after 30 ns, '1' after 50 ns;
 
   TEST_PROCESS: process
     begin
