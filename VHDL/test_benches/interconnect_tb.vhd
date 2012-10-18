@@ -5,7 +5,7 @@
 -- File       : interconnect_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/10/02
+-- Last update: 2012/10/17
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The test bench to test the interconnect which is a link
@@ -184,7 +184,7 @@ begin  -- interconnect_tb_arch
        --wait for half_clk_period;
 
        --generate the reset signal
-       tb_rst <= '1' after 40 ns, '0' after 70 ns;
+       tb_rst <= '0' after 40 ns, '1' after 70 ns;
 
      --Test for the 16 point FFT scenario           
        --create a process to generate different combinations
