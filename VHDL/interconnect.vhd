@@ -5,7 +5,7 @@
 -- File       : interconnect.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/10/02
+-- Last update: 2012/10/17
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The interconnect which routes operand address to RAM modules
@@ -72,7 +72,7 @@ begin  -- interconnect_arch
 
     begin
 
-      if rst = '1' then
+      if rst = '0' then
 
         --Do nothing
 
