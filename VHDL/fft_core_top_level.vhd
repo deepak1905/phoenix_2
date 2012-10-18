@@ -5,7 +5,7 @@
 -- File       : fft_core_top_level.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/10/17
+-- Last update: 2012/10/03
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The interface of N-point FFT processor core with the memory
@@ -89,10 +89,10 @@ architecture rtl of fft_core_top_level is
       addr7 : out std_logic_vector(ADDR_WIDTH-1 downto 0);
 
       din8  : in std_logic_vector(DATA_WIDTH-1 downto 0);
-      addr8 : out std_logic_vector(ADDR_WIDTH+1 downto 0);
+      addr8 : out std_logic_vector(ADDR_WIDTH-1 downto 0);
 
       din9  : in std_logic_vector(DATA_WIDTH-1 downto 0);
-      addr9 : out std_logic_vector(ADDR_WIDTH+1 downto 0));
+      addr9 : out std_logic_vector(ADDR_WIDTH-1 downto 0));
   end component;
 
   --RAM unit
@@ -125,7 +125,7 @@ architecture rtl of fft_core_top_level is
   constant DATA_WIDTH : integer := 32;
   constant RAM_ADDR_WIDTH : integer := 1;   --8 point FFT, 2 points per bank hence
                                         --1 bit address
-  constant ROM_ADDR_WIDTH : integer := 3;
+  constant ROM_ADDR_WIDTH : integer := 2;
   
   signal s_din0, s_dout0 : std_logic_vector(DATA_WIDTH-1 downto 0);
   signal s_addr0 : std_logic_vector(RAM_ADDR_WIDTH-1 downto 0);
@@ -374,7 +374,7 @@ begin  -- rtl
 
   --generate clk, rst signals
   s_clk <= not s_clk after 10 ns;
-  s_rst <= '0' after 30 ns, '1' after 60 ns;
+  s_rst <= '1' after 30 ns, '0' after 60 ns;
 
   --provide go signal to start the FFT computation
   s_start <= '1' after 90 ns, '0' after 130 ns;
