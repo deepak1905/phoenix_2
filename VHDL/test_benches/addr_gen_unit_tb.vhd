@@ -5,7 +5,7 @@
 -- File       : addr_gen_unit_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/09/19
+-- Last update: 2012/10/17
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Instantiates the address generation unit module for different
@@ -163,7 +163,7 @@ begin  -- addr_gen_unit_tb_arch
 
     end process CLK_PROCESS;
 
-    tb_rst <= '1' after 30 ns, '0' after 50 ns;
+    tb_rst <= '0' after 30 ns, '1' after 50 ns;
 
     tb_start <= '1' after 60 ns, '0' after 80 ns;
 
