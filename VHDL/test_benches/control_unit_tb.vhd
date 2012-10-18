@@ -5,7 +5,7 @@
 -- File       : control_unit_tb.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/09/18
+-- Last update: 2012/10/17
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Instantiates control unit module for different value of
@@ -225,7 +225,7 @@ begin  -- control_unit_tb_arch
     );
 
   --Generate the reset signal
-  tb_rst <= '1' after 10 ns, '0' after 20 ns;
+  tb_rst <= '0' after 10 ns, '1' after 20 ns;
 
   --Generate the clock signal
   CLK_PROCESS: process
