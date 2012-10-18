@@ -5,7 +5,7 @@
 -- File       : fft_processor_core.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/10/17
+-- Last update: 2012/10/02
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The core of fft computation involving butterfly unit, control
@@ -84,11 +84,11 @@ entity fft_core is
 
     --memory bank ROM0 data/address signals
     din8 : in std_logic_vector(DATA_WIDTH-1 downto 0);       -- input data
-    addr8 : out std_logic_vector(ADDR_WIDTH+1 downto 0);       -- output address
+    addr8 : out std_logic_vector(ADDR_WIDTH downto 0);       -- output address
 
     --memory bank ROM1 data/address signals
     din9 : in std_logic_vector(DATA_WIDTH-1 downto 0);       -- input data
-    addr9 : out std_logic_vector(ADDR_WIDTH+1 downto 0));      -- output address
+    addr9 : out std_logic_vector(ADDR_WIDTH downto 0));      -- output address
     
 end fft_core;
 
@@ -302,11 +302,7 @@ begin  -- rtl
   rw4 <= s_SetB_RW;
   rw5 <= s_SetB_RW;
   rw6 <= s_SetB_RW;
-  rw7 <= s_SetB_RW;
-
-  --Twiddle factor addresses
-  addr8 <= s_Coef0Addr;
-  addr9 <= s_Coef1Addr;
+  rw7 <= s_SetB_RW;  
 
   --Mux to select data read from
   --RAM and going to butterfly unit0
@@ -392,8 +388,8 @@ begin  -- rtl
       DATA_WIDTH => 16)
 
     port map (
-      input0 => s_bfy0_WRI(15 downto 0),
-      input1 => s_bfy0_WRI(31 downto 16),
+      input0 => s_bfy0_WRI(31 downto 16),
+      input1 => s_bfy0_WRI(15 downto 0),
       sel    => s_bfy0_tw_sel,
       output => s_WRI_0);
   
@@ -533,8 +529,8 @@ begin  -- rtl
       DATA_WIDTH => 16)
 
     port map (
-      input0 => s_bfy1_WRI(15 downto 0),
-      input1 => s_bfy1_WRI(31 downto 16),
+      input0 => s_bfy1_WRI(31 downto 16),
+      input1 => s_bfy1_WRI(15 downto 0),
       sel    => s_bfy1_tw_sel,
       output => s_WRI_1);
   
