@@ -5,7 +5,7 @@
 -- File       : single_port_RAM.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/10/03
+-- Last update: 2012/10/04
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Single port RAM module enables single clock read-write
@@ -87,6 +87,7 @@ architecture rtl of single_port_RAM is
     end function initialize_RAM;
 
   signal RAM_memory_bank : RAM_memory := initialize_RAM(FILE_NAME);
+  signal undef_value : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => 'U');
 
   begin
 
@@ -99,15 +100,40 @@ architecture rtl of single_port_RAM is
 
         if rw = '0' then
 
+          --Read from RAM only if the address is valid
+          if addr_bus /= undef_value then
+            
           --read from the RAM and send the data in the output bus
           data_out <= RAM_memory_bank(conv_integer(unsigned(addr_bus)));
-          
+
           else
 
+            --drive the output to tristate if
+            --the address bus is invalid
+            data_out <= (others => 'Z');
+
+          end if;          
+          
+        elsif rw = '1' then
+
+          --write only if the address is valid
+          if addr_bus /= undef_value then
+            
             --write the data coming in from input bus into the RAM
             --and drive the output bus into tristate value
             RAM_memory_bank(conv_integer(unsigned(addr_bus))) <= data_in;
-            data_out <= (others => 'Z');
+            
+          end if;
+
+          --drive the output data bus to tristate during
+          --the read operation
+          data_out <= (others => 'Z');
+            
+        else
+
+          --when the rw signal is not valid, drive
+          --output to tristate
+          data_out <= (others => 'Z');              
             
         end if;
 
