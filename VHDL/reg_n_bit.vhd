@@ -5,7 +5,7 @@
 -- File       : reg_n_bit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/10/17
+-- Last update: 2012/09/13
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Register with n-bit input
@@ -48,7 +48,7 @@ begin  -- rtl
       --On reset clear the register otherwise
       --set the output based on the load
       --control signal
-      if rst = '0' then
+      if rst = '1' then
         reg <= (others => '0');
       elsif clk'event and clk = '1' then
         if load = '1' or load = 'H' then

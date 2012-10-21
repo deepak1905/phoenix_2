@@ -5,7 +5,7 @@
 -- File       : control_unit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/10/17
+-- Last update: 2012/10/03
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Control unit generates the control signal required to carry
@@ -76,7 +76,7 @@ begin  -- control_unit_arch
     variable stage_count : std_logic_vector(N_width - 1 downto 0) := (others =>'0');
 
     -- clock cycle instance during piplined execution in butterfly
-    variable cycle_clock_instance : integer range -2 to 3 := 0;
+    variable cycle_clock_instance : integer range 0 to 3 := 0;
     -- allow two more cycles to flush the pipeline in
     -- the final stage of FFT computation
     variable pipe_line_flush : integer := 2;
@@ -85,7 +85,7 @@ begin  -- control_unit_arch
                                                         
     begin
 
-      if rst = '0' then
+      if rst = '1' then
 
         done              <= '0';
         SetA_RW           <= '0';
@@ -115,13 +115,11 @@ begin  -- control_unit_arch
         
         --shifting right by 1 positions makes it N/2 which is number of clock cycles
         --required per FFT stage(because butterfly reads new sample every 2
-        --clock cycles). The initial stage takes two additional cycles because
-        --the data from the RAM/ROM units take two cycles to arrive at the
-        --butterfly input after the address generation.
-        stage_iteration_count := SHR(N, "01") + "10";
+        --clock cycles)
+        stage_iteration_count := SHR(N, "01");
         stage_count           := stage_count(N_width-1 downto 1) & '1';
 
-        cycle_clock_instance  := -2;
+        cycle_clock_instance  := 0;
 
       elsif clk'event and clk = '1' then
 
@@ -185,40 +183,15 @@ begin  -- control_unit_arch
               SetB_RW <= '1';
               done    <= '0';
 
-            --It takes wwo cycles in the beginning for the input data
-            --to arrive at the input of butterfly units, hence start the
-            --butterfly unit specific control signals are triggered at the
-            --third cycle of stage S1
               case cycle_clock_instance is
-                when -2 =>
-                  c_add_sub         <= '0';
+                when 0 =>
+                  c_add_sub         <= '1';
                   c_load            <= '0';
-                  c_load1           <= '0';
+                  c_load1           <= '1';
                   c_load_P          <= '0';
                   c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '0';
-                  
-                  cycle_clock_instance := -1;
-                when -1 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '0';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
+                  c_load_Q          <= '1';
+                  c_load_W          <= '1';
                   c_sel             <= '0';
                   bfy0_ip0_reg_load <= '1';
                   bfy0_ip1_reg_load <= '1';
@@ -230,27 +203,6 @@ begin  -- control_unit_arch
                   bfy1_mux_sel      <= '0';
                   bfy1_tw_reg_load  <= '1';
                   bfy1_tw_sel       <= '0';
-
-                  cycle_clock_instance := 0;                  
-                when 0 =>
-                  c_add_sub         <= '1';
-                  c_load            <= '0';
-                  c_load1           <= '1';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '1';
-                  c_load_W          <= '1';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
 
                   cycle_clock_instance := 1;
                 when 1 =>
@@ -262,16 +214,16 @@ begin  -- control_unit_arch
                   c_load_Q          <= '0';
                   c_load_W          <= '1';
                   c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
                   bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
                   bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';
 
                   cycle_clock_instance := 2;
                 when 2 =>
@@ -283,16 +235,16 @@ begin  -- control_unit_arch
                   c_load_Q          <= '1';
                   c_load_W          <= '1';
                   c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
+                  bfy0_ip0_reg_load <= '1';
+                  bfy0_ip1_reg_load <= '1';
                   bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
+                  bfy0_tw_reg_load  <= '1';
+                  bfy0_tw_sel       <= '0';
+                  bfy1_ip0_reg_load <= '1';
+                  bfy1_ip1_reg_load <= '1';
                   bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
+                  bfy1_tw_reg_load  <= '1';
+                  bfy1_tw_sel       <= '0';
                   
                   cycle_clock_instance := 3;
                 when 3 =>
@@ -304,16 +256,16 @@ begin  -- control_unit_arch
                   c_load_Q          <= '0';
                   c_load_W          <= '1';
                   c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
                   bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
                   bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';
                   
                   cycle_clock_instance := 0;                  
                 when others => null;
@@ -411,35 +363,14 @@ begin  -- control_unit_arch
               done    <= '0';
 
               case cycle_clock_instance is
-                when -2 =>
-                  c_add_sub         <= '0';
+                when 0 =>
+                  c_add_sub         <= '1';
                   c_load            <= '0';
-                  c_load1           <= '0';
+                  c_load1           <= '1';
                   c_load_P          <= '0';
                   c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '0';
-                  
-                  cycle_clock_instance := -1;
-                when -1 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '0';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
+                  c_load_Q          <= '1';
+                  c_load_W          <= '1';
                   c_sel             <= '0';
                   bfy0_ip0_reg_load <= '1';
                   bfy0_ip1_reg_load <= '1';
@@ -451,27 +382,6 @@ begin  -- control_unit_arch
                   bfy1_mux_sel      <= '0';
                   bfy1_tw_reg_load  <= '1';
                   bfy1_tw_sel       <= '0';
-
-                  cycle_clock_instance := 0;                
-                when 0 =>
-                  c_add_sub         <= '1';
-                  c_load            <= '0';
-                  c_load1           <= '1';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '1';
-                  c_load_W          <= '1';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
 
                   cycle_clock_instance := 1;
                 when 1 =>
@@ -483,16 +393,16 @@ begin  -- control_unit_arch
                   c_load_Q          <= '0';
                   c_load_W          <= '1';
                   c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
                   bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
                   bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';                  
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';                  
 
                   cycle_clock_instance := 2;
                 when 2 =>
@@ -504,16 +414,16 @@ begin  -- control_unit_arch
                   c_load_Q          <= '1';
                   c_load_W          <= '1';
                   c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
+                  bfy0_ip0_reg_load <= '1';
+                  bfy0_ip1_reg_load <= '1';
                   bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
+                  bfy0_tw_reg_load  <= '1';
+                  bfy0_tw_sel       <= '0';
+                  bfy1_ip0_reg_load <= '1';
+                  bfy1_ip1_reg_load <= '1';
                   bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
+                  bfy1_tw_reg_load  <= '1';
+                  bfy1_tw_sel       <= '0';
 
                   cycle_clock_instance := 3;
                 when 3 =>
@@ -525,16 +435,16 @@ begin  -- control_unit_arch
                   c_load_Q          <= '0';
                   c_load_W          <= '1';
                   c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
+                  bfy0_ip0_reg_load <= '0';
+                  bfy0_ip1_reg_load <= '0';
                   bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
+                  bfy0_tw_reg_load  <= '0';
+                  bfy0_tw_sel       <= '1';
+                  bfy1_ip0_reg_load <= '0';
+                  bfy1_ip1_reg_load <= '0';
                   bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';                  
+                  bfy1_tw_reg_load  <= '0';
+                  bfy1_tw_sel       <= '1';                  
 
                   cycle_clock_instance := 0;
                 when others => null;

@@ -5,7 +5,7 @@
 -- File       : addr_gen_unit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/10/17
+-- Last update: 2012/09/23
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The address generation unit generates following addresses in
@@ -55,7 +55,7 @@ architecture addr_gen_unit_arch of addr_gen_unit is
   signal s_count0 : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
   -- flag indicating that address generation is in progress
   signal addr_gen_on : std_logic := '0';
-  constant zero_value : std_logic_vector(ADDR_WIDTH downto 0) := (others => '0');
+  constant zero_value : std_logic_vector(ADDR_WIDTH+1 downto 0) := (others => '0');
   --stage counter, it runs like 0,1,2,3 etc  
   signal s_stage_counter : integer := 0;
                                           
@@ -73,8 +73,8 @@ CLK_PROCESS: process(clk, rst)
   variable last_stage : boolean := false;  -- to retain the values of counts and stores for one extra cycle in the last stage
     
   begin
-    if rst = '0' then
-
+    if rst = '1' then
+      
       count0                <= (others => '0');
       count1                <= (others => '0');
       store0                <= (others => '0');
@@ -90,7 +90,7 @@ CLK_PROCESS: process(clk, rst)
       --initialize stage count to 1 inorder to keep track of the stage count      
       stage_count           := stage_count(N_width-1 downto 1) & '1';
       coef                  := (others => '0');
-
+      
     elsif clk'event and clk = '1' then
 
       if (start = '1' or addr_gen_on = '1') and N >= 8 then
@@ -100,7 +100,7 @@ CLK_PROCESS: process(clk, rst)
         if stage_count <= N and last_stage = false then
 
           if addr_gen_freq /= 0 then
-
+            
           count0 <= s_count0;          --Generate address to read two operands for the butterfies
           count1 <= not s_count0;      --Generate address to read next two operands for the butterflies
           --Generate address to write the two output results of butterflies
@@ -111,11 +111,11 @@ CLK_PROCESS: process(clk, rst)
           coef      := "00" & s_count0;
           --Generate address for first coefficient
 --          Coef0Addr <= coef(N_width-2 downto N_width-2-s_stage_counter) & zero_value(N_width-3-s_stage_counter downto 0);
-          Coef0Addr <= coef(ADDR_WIDTH+1 downto ADDR_WIDTH+1-s_stage_counter) & zero_value(ADDR_WIDTH-s_stage_counter downto 0);
+          Coef0Addr <= coef(ADDR_WIDTH+1 downto ADDR_WIDTH+1-s_stage_counter) & zero_value(ADDR_WIDTH-s_stage_counter downto 0);          
           coef      := "01" & (not s_count0);
           --Generate address for the next coefficient
 --          Coef1Addr <= coef(N_width-2 downto N_width-2-s_stage_counter) & zero_value(N_width-3-s_stage_counter downto 0);
-          Coef1Addr <= coef(ADDR_WIDTH+1 downto ADDR_WIDTH+1-s_stage_counter) & zero_value(ADDR_WIDTH-s_stage_counter downto 0);
+          Coef1Addr <= coef(ADDR_WIDTH+1 downto ADDR_WIDTH+1-s_stage_counter) & zero_value(ADDR_WIDTH-s_stage_counter downto 0);          
 
           stage_iteration_count := stage_iteration_count - 1;
 

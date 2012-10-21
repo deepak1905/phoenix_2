@@ -5,7 +5,7 @@
 -- File       : single_port_ROM.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/10/04
+-- Last update: 2012/10/03
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Single port ROM module enables single clock read
@@ -91,7 +91,6 @@ architecture rtl of single_port_ROM is
   --NOTE:ROM initialization to zeros can be done as (others =>(others=>'0'))
   --but used a function to initialize - just for a change.!
   signal ROM_memory_bank : ROM_memory := initialize_ROM(FILE_NAME);
-  signal undef_value : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => 'U');
 
   begin
 
@@ -102,23 +101,9 @@ architecture rtl of single_port_ROM is
 
       if clk'event and clk = '1' then
 
-        --If there is a valid address value
-        --only then send the read the data
-        --out from ROM otherwise drive the
-        --data bus to tristate
-        if addr_bus /= undef_value then
-          
         --read from ROM and send the data in the output bus
         data_out <= ROM_memory_bank(conv_integer(unsigned(addr_bus)));
-        
-        else
-
-          --If the address bus has invalid value drive
-          --the data bus to high impedence state
-          data_out <= (others => 'Z');
           
-        end if;
-        
       end if;
       
     end process READ_PROCESS;
