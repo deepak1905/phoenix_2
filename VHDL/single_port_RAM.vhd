@@ -5,7 +5,7 @@
 -- File       : single_port_RAM.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/10/04
+-- Last update: 2012/11/06
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Single port RAM module enables single clock read-write
@@ -38,8 +38,11 @@ entity single_port_RAM is
     addr_bus : in    std_logic_vector(ADDR_WIDTH-1 downto 0);   -- the address bus whose width is configurable at the design time
     
     --the data bus carrying the data(upper 16 bits for real part of data and lower 16 bits is for imaginary part of data)
-    data_in : in std_logic_vector(DATA_WIDTH-1 downto 0);
-    data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));
+    data_in  : in std_logic_vector(DATA_WIDTH-1 downto 0);
+    data_out : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    done     : in std_logic);           --FFT completion signal required to
+                                        --write the final results back to file
+                                        --(data verification strategy)
 
                                         
 end single_port_RAM;
@@ -48,14 +51,14 @@ architecture rtl of single_port_RAM is
 
   subtype ram_word is std_logic_vector(DATA_WIDTH-1 downto 0);
   type RAM_memory is array ((2**ADDR_WIDTH)-1 downto 0) of ram_word;
+  signal temp : std_logic;
 
   impure function initialize_RAM(file_name : string)
     return RAM_memory is
 
     file file_handle : text;
     variable lineread : line;
---    variable dataread : std_logic_vector(DATA_WIDTH-1 downto 0);
-    variable dataread : integer;
+    variable dataread : integer range -2_147_483_647 to 2_147_483_647;
     variable ram_mem : RAM_memory;
     variable is_open : boolean := false;
 
@@ -93,7 +96,11 @@ architecture rtl of single_port_RAM is
 
     --perform synchronous read-write RAM operation
     RW_PROCESS: process(clk)
-    
+
+      file file_handle : text;
+      variable linewrite: line;
+      variable datawrite : integer;
+      
     begin
 
       if clk'event and clk = '1' then
@@ -137,8 +144,26 @@ architecture rtl of single_port_RAM is
             
         end if;
 
+--        temp <= done;
+--
+--        if temp = '1' then
+--
+--        file_open(file_handle, file_name, WRITE_MODE);
+--
+--          for i in 0 to 1 loop
+--
+--            datawrite := conv_integer(signed(RAM_memory_bank(i)));
+--            write(linewrite, datawrite);
+--            writeline(file_handle, linewrite);
+--
+--          end loop;
+--
+--          file_close(file_handle);
+--
+--        end if;
+
       end if;
-      
+
     end process RW_PROCESS;
 
 end rtl;
