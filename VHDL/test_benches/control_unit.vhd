@@ -5,7 +5,7 @@
 -- File       : control_unit.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/10/17
+-- Last update: 2012/11/06
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: Control unit generates the control signal required to carry
@@ -31,31 +31,35 @@ entity control_unit is
     N_width : integer := 7);   -- By default 64 point FFT is supported.
   
   port (
-    clk               : in  std_logic;          -- clock input
-    rst               : in  std_logic;          -- reset signal
-    start             : in  std_logic;          -- enables start of FFT computation
-    N                 : in  std_logic_vector (N_width-1 downto 0);-- number of FFT points    
-    c_add_sub         : out std_logic;          --add/subtract control signal
-    c_load            : out std_logic;          -- register load control signal
-    c_load1           : out std_logic;          -- register load control signal
-    c_load_P          : out std_logic;          -- load P register input - control signal
-    c_load_P2         : out std_logic;          -- load next P reg input - control signal
-    c_load_Q          : out std_logic;          -- load Q register input - control signal
-    c_load_W          : out std_logic;          -- load W register input - control signal
-    c_sel             : out std_logic;          -- select PR, PI mux control signal
-    SetA_RW           : out std_logic;          -- interconnect A RW signal('0' - read, '1' - write)
-    SetB_RW           : out std_logic;          -- interconnect B RW signal('0' - read, '1' - write)
-    bfy0_ip0_reg_load : out std_logic;          -- butterfly unit0 input0 register load
-    bfy0_ip1_reg_load : out std_logic;          -- butterfly unit0 input1 register load
-    bfy0_mux_sel      : out std_logic;          -- butterfly unit0 input(Q/P) sel
-    bfy0_tw_reg_load  : out std_logic;          -- butterfly unit0 twiddle factor reg load
-    bfy0_tw_sel       : out std_logic;          -- butterfly unit0 twiddle factor sel(WR/WI)
-    bfy1_ip0_reg_load : out std_logic;          -- butterfly unit1 input0 register load
-    bfy1_ip1_reg_load : out std_logic;          -- butterfly unit1 input1 register load
-    bfy1_mux_sel      : out std_logic;          -- butterfly unit1 input(Q/P) sel
-    bfy1_tw_reg_load  : out std_logic;          -- butterfly unit1 twiddle factor reg load
-    bfy1_tw_sel       : out std_logic;          -- butterfly unit1 twiddle factor sel(WR/WI)
-    done              : out std_logic);         -- indicates completion of FFT computation
+    clk                  : in  std_logic;          -- clock input
+    rst                  : in  std_logic;          -- reset signal
+    start                : in  std_logic;          -- enables start of FFT computation
+    N                    : in  std_logic_vector (N_width-1 downto 0);-- number of FFT points    
+    c_add_sub            : out std_logic;          --add/subtract control signal
+    c_load               : out std_logic;          -- register load control signal
+    c_load1              : out std_logic;          -- register load control signal
+    c_load_P             : out std_logic;          -- load P register input - control signal
+    c_load_P2            : out std_logic;          -- load next P reg input - control signal
+    c_load_Q             : out std_logic;          -- load Q register input - control signal
+    c_load_W             : out std_logic;          -- load W register input - control signal
+    c_sel                : out std_logic;          -- select PR, PI mux control signal
+    SetA_RW              : out std_logic;          -- interconnect A RW signal('0' - read, '1' - write)
+    SetB_RW              : out std_logic;          -- interconnect B RW signal('0' - read, '1' - write)
+    bfy0_ip0_reg_load    : out std_logic;          -- butterfly unit0 input0 register load
+    bfy0_ip1_reg_load    : out std_logic;          -- butterfly unit0 input1 register load
+    bfy0_mux_sel         : out std_logic;          -- butterfly unit0 input(Q/P) sel
+    bfy0_tw_reg_load     : out std_logic;          -- butterfly unit0 twiddle factor reg load
+    bfy0_tw_sel          : out std_logic;          -- butterfly unit0 twiddle factor sel(WR/WI)
+    bfy0_add_op_reg_load : out std_logic;          --butterfly unit0 addition output result load
+    bfy0_sub_op_reg_load : out std_logic;          --butterfly unit0 subtraction output result load
+    bfy1_ip0_reg_load    : out std_logic;          -- butterfly unit1 input0 register load
+    bfy1_ip1_reg_load    : out std_logic;          -- butterfly unit1 input1 register load
+    bfy1_mux_sel         : out std_logic;          -- butterfly unit1 input(Q/P) sel
+    bfy1_tw_reg_load     : out std_logic;          -- butterfly unit1 twiddle factor reg load
+    bfy1_tw_sel          : out std_logic;          -- butterfly unit1 twiddle factor sel(WR/WI)
+    bfy1_add_op_reg_load : out std_logic;          --butterfly unit1 addition output result load
+    bfy1_sub_op_reg_load : out std_logic;          --butterfly unit1 subtraction output result load
+    done                 : out std_logic);         -- indicates completion of FFT computation
 end control_unit;
 
 
@@ -87,27 +91,31 @@ begin  -- control_unit_arch
 
       if rst = '0' then
 
-        done              <= '0';
-        SetA_RW           <= '0';
-        SetB_RW           <= '0';
-        c_add_sub         <= '0';
-        c_load            <= '0';
-        c_load1           <= '0';
-        c_load_P          <= '0';
-        c_load_P2         <= '0';
-        c_load_Q          <= '0';
-        c_load_W          <= '0';
-        c_sel             <= '0';
-        bfy0_ip0_reg_load <= '0';
-        bfy0_ip1_reg_load <= '0';
-        bfy0_mux_sel      <= '0';
-        bfy0_tw_reg_load  <= '0';
-        bfy0_tw_sel       <= '0';
-        bfy1_ip0_reg_load <= '0';
-        bfy1_ip1_reg_load <= '0';
-        bfy1_mux_sel      <= '0';
-        bfy1_tw_reg_load  <= '0';
-        bfy1_tw_sel       <= '0';
+        done                 <= '0';
+        SetA_RW              <= '0';
+        SetB_RW              <= '0';
+        c_add_sub            <= '0';
+        c_load               <= '0';
+        c_load1              <= '0';
+        c_load_P             <= '0';
+        c_load_P2            <= '0';
+        c_load_Q             <= '0';
+        c_load_W             <= '0';
+        c_sel                <= '0';
+        bfy0_ip0_reg_load    <= '0';
+        bfy0_ip1_reg_load    <= '0';
+        bfy0_mux_sel         <= '0';
+        bfy0_tw_reg_load     <= '0';
+        bfy0_tw_sel          <= '0';
+        bfy0_add_op_reg_load <= '0';
+        bfy0_sub_op_reg_load <= '0';
+        bfy1_ip0_reg_load    <= '0';
+        bfy1_ip1_reg_load    <= '0';
+        bfy1_mux_sel         <= '0';
+        bfy1_tw_reg_load     <= '0';
+        bfy1_tw_sel          <= '0';
+        bfy1_add_op_reg_load <= '0';
+        bfy1_sub_op_reg_load <= '0';
 
         --after reset begin with the initial state        
         current_state <= S0;
@@ -191,129 +199,154 @@ begin  -- control_unit_arch
             --third cycle of stage S1
               case cycle_clock_instance is
                 when -2 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '0';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '0';
+                  c_add_sub            <= '0';
+                  c_load               <= '0';
+                  c_load1              <= '0';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '0';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '0';
+                  bfy0_ip1_reg_load    <= '0';
+                  bfy0_mux_sel         <= '0';
+                  bfy0_tw_reg_load     <= '0';
+                  bfy0_tw_sel          <= '0';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '0';
+                  bfy1_ip0_reg_load    <= '0';
+                  bfy1_ip1_reg_load    <= '0';
+                  bfy1_mux_sel         <= '0';
+                  bfy1_tw_reg_load     <= '0';
+                  bfy1_tw_sel          <= '0';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '0';
                   
                   cycle_clock_instance := -1;
                 when -1 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '0';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';
+                  c_add_sub            <= '0';
+                  c_load               <= '0';
+                  c_load1              <= '0';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '0';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '1';
+                  bfy0_ip1_reg_load    <= '1';
+                  bfy0_mux_sel         <= '1';
+                  bfy0_tw_reg_load     <= '1';
+                  bfy0_tw_sel          <= '1';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '0';                  
+                  bfy1_ip0_reg_load    <= '1';
+                  bfy1_ip1_reg_load    <= '1';
+                  bfy1_mux_sel         <= '1';
+                  bfy1_tw_reg_load     <= '1';
+                  bfy1_tw_sel          <= '1';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '0';                  
 
                   cycle_clock_instance := 0;                  
                 when 0 =>
-                  c_add_sub         <= '1';
-                  c_load            <= '0';
-                  c_load1           <= '1';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '1';
-                  c_load_W          <= '1';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
+                  c_add_sub            <= '1';
+                  c_load               <= '0';
+                  c_load1              <= '1';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '1';
+                  c_load_W             <= '1';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '0';
+                  bfy0_ip1_reg_load    <= '0';
+                  bfy0_mux_sel         <= '0';
+                  bfy0_tw_reg_load     <= '0';
+                  bfy0_tw_sel          <= '0';
+                  bfy0_add_op_reg_load <= '1';
+                  bfy0_sub_op_reg_load <= '0';                  
+                  bfy1_ip0_reg_load    <= '0';
+                  bfy1_ip1_reg_load    <= '0';
+                  bfy1_mux_sel         <= '0';
+                  bfy1_tw_reg_load     <= '0';
+                  bfy1_tw_sel          <= '0';
+                  bfy1_add_op_reg_load <= '1';
+                  bfy1_sub_op_reg_load <= '0';                  
+
 
                   cycle_clock_instance := 1;
                 when 1 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '1';
-                  c_load1           <= '0';
-                  c_load_P          <= '1';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '1';
-                  c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
-                  bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
-                  bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';
+                  c_add_sub            <= '0';
+                  c_load               <= '1';
+                  c_load1              <= '0';
+                  c_load_P             <= '1';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '1';
+                  c_sel                <= '1';
+                  bfy0_ip0_reg_load    <= '1';
+                  bfy0_ip1_reg_load    <= '1';
+                  bfy0_mux_sel         <= '1';
+                  bfy0_tw_reg_load     <= '1';
+                  bfy0_tw_sel          <= '1';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '1';                  
+                  bfy1_ip0_reg_load    <= '1';
+                  bfy1_ip1_reg_load    <= '1';
+                  bfy1_mux_sel         <= '1';
+                  bfy1_tw_reg_load     <= '1';
+                  bfy1_tw_sel          <= '1';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '1';                  
 
                   cycle_clock_instance := 2;
                 when 2 =>
-                  c_add_sub         <= '1';
-                  c_load            <= '0';
-                  c_load1           <= '1';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '1';
-                  c_load_W          <= '1';
-                  c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
+                  c_add_sub            <= '1';
+                  c_load               <= '0';
+                  c_load1              <= '1';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '1';
+                  c_load_W             <= '1';
+                  c_sel                <= '1';
+                  bfy0_ip0_reg_load    <= '0';
+                  bfy0_ip1_reg_load    <= '0';
+                  bfy0_mux_sel         <= '0';
+                  bfy0_tw_reg_load     <= '0';
+                  bfy0_tw_sel          <= '0';
+                  bfy0_add_op_reg_load <= '1';
+                  bfy0_sub_op_reg_load <= '0';                  
+                  bfy1_ip0_reg_load    <= '0';
+                  bfy1_ip1_reg_load    <= '0';
+                  bfy1_mux_sel         <= '0';
+                  bfy1_tw_reg_load     <= '0';
+                  bfy1_tw_sel          <= '0';
+                  bfy1_add_op_reg_load <= '1';
+                  bfy1_sub_op_reg_load <= '0';                  
                   
                   cycle_clock_instance := 3;
                 when 3 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '1';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '1';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '1';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
-                  bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
-                  bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';
+                  c_add_sub            <= '0';
+                  c_load               <= '1';
+                  c_load1              <= '0';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '1';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '1';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '1';
+                  bfy0_ip1_reg_load    <= '1';
+                  bfy0_mux_sel         <= '1';
+                  bfy0_tw_reg_load     <= '1';
+                  bfy0_tw_sel          <= '1';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '1';                  
+                  bfy1_ip0_reg_load    <= '1';
+                  bfy1_ip1_reg_load    <= '1';
+                  bfy1_mux_sel         <= '1';
+                  bfy1_tw_reg_load     <= '1';
+                  bfy1_tw_sel          <= '1';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '1';                  
                   
                   cycle_clock_instance := 0;                  
                 when others => null;
@@ -342,23 +375,27 @@ begin  -- control_unit_arch
 
               --No more butterfly computations are needed hence
               --set the rest of the control signals to 0
-              c_load            <= '0';
-              c_load1           <= '0';
-              c_load_P          <= '0';
-              c_load_P2         <= '0';
-              c_load_Q          <= '0';
-              c_load_W          <= '0';
-              c_sel             <= '0';
-              bfy0_ip0_reg_load <= '0';
-              bfy0_ip1_reg_load <= '0';
-              bfy0_mux_sel      <= '0';
-              bfy0_tw_reg_load  <= '0';
-              bfy0_tw_sel       <= '0';
-              bfy1_ip0_reg_load <= '0';
-              bfy1_ip1_reg_load <= '0';
-              bfy1_mux_sel      <= '0';
-              bfy1_tw_reg_load  <= '0';
-              bfy1_tw_sel       <= '0';
+              c_load               <= '0';
+              c_load1              <= '0';
+              c_load_P             <= '0';
+              c_load_P2            <= '0';
+              c_load_Q             <= '0';
+              c_load_W             <= '0';
+              c_sel                <= '0';
+              bfy0_ip0_reg_load    <= '0';
+              bfy0_ip1_reg_load    <= '0';
+              bfy0_mux_sel         <= '0';
+              bfy0_tw_reg_load     <= '0';
+              bfy0_tw_sel          <= '0';
+              bfy0_add_op_reg_load <= '0';
+              bfy0_sub_op_reg_load <= '0';                                
+              bfy1_ip0_reg_load    <= '0';
+              bfy1_ip1_reg_load    <= '0';
+              bfy1_mux_sel         <= '0';
+              bfy1_tw_reg_load     <= '0';
+              bfy1_tw_sel          <= '0';
+              bfy1_add_op_reg_load <= '0';
+              bfy1_sub_op_reg_load <= '0';              
 
               if pipe_line_flush = 0 then
 
@@ -412,129 +449,153 @@ begin  -- control_unit_arch
 
               case cycle_clock_instance is
                 when -2 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '0';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '0';
+                  c_add_sub            <= '0';
+                  c_load               <= '0';
+                  c_load1              <= '0';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '0';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '0';
+                  bfy0_ip1_reg_load    <= '0';
+                  bfy0_mux_sel         <= '0';
+                  bfy0_tw_reg_load     <= '0';
+                  bfy0_tw_sel          <= '0';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '0';                                    
+                  bfy1_ip0_reg_load    <= '0';
+                  bfy1_ip1_reg_load    <= '0';
+                  bfy1_mux_sel         <= '0';
+                  bfy1_tw_reg_load     <= '0';
+                  bfy1_tw_sel          <= '0';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '0';                                
                   
                   cycle_clock_instance := -1;
                 when -1 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '0';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '0';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';
+                  c_add_sub            <= '0';
+                  c_load               <= '0';
+                  c_load1              <= '0';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '0';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '1';
+                  bfy0_ip1_reg_load    <= '1';
+                  bfy0_mux_sel         <= '1';
+                  bfy0_tw_reg_load     <= '1';
+                  bfy0_tw_sel          <= '1';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '0';                  
+                  bfy1_ip0_reg_load    <= '1';
+                  bfy1_ip1_reg_load    <= '1';
+                  bfy1_mux_sel         <= '1';
+                  bfy1_tw_reg_load     <= '1';
+                  bfy1_tw_sel          <= '1';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '0';                                
 
                   cycle_clock_instance := 0;                
                 when 0 =>
-                  c_add_sub         <= '1';
-                  c_load            <= '0';
-                  c_load1           <= '1';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '1';
-                  c_load_W          <= '1';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
+                  c_add_sub            <= '1';
+                  c_load               <= '0';
+                  c_load1              <= '1';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '1';
+                  c_load_W             <= '1';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '0';
+                  bfy0_ip1_reg_load    <= '0';
+                  bfy0_mux_sel         <= '0';
+                  bfy0_tw_reg_load     <= '0';
+                  bfy0_tw_sel          <= '0';
+                  bfy0_add_op_reg_load <= '1';
+                  bfy0_sub_op_reg_load <= '0';                  
+                  bfy1_ip0_reg_load    <= '0';
+                  bfy1_ip1_reg_load    <= '0';
+                  bfy1_mux_sel         <= '0';
+                  bfy1_tw_reg_load     <= '0';
+                  bfy1_tw_sel          <= '0';
+                  bfy1_add_op_reg_load <= '1';
+                  bfy1_sub_op_reg_load <= '0';                  
 
                   cycle_clock_instance := 1;
                 when 1 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '1';
-                  c_load1           <= '0';
-                  c_load_P          <= '1';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '1';
-                  c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
-                  bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
-                  bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';                  
+                  c_add_sub            <= '0';
+                  c_load               <= '1';
+                  c_load1              <= '0';
+                  c_load_P             <= '1';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '1';
+                  c_sel                <= '1';
+                  bfy0_ip0_reg_load    <= '1';
+                  bfy0_ip1_reg_load    <= '1';
+                  bfy0_mux_sel         <= '1';
+                  bfy0_tw_reg_load     <= '1';
+                  bfy0_tw_sel          <= '1';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '1';                  
+                  bfy1_ip0_reg_load    <= '1';
+                  bfy1_ip1_reg_load    <= '1';
+                  bfy1_mux_sel         <= '1';
+                  bfy1_tw_reg_load     <= '1';
+                  bfy1_tw_sel          <= '1';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '1';                  
 
                   cycle_clock_instance := 2;
                 when 2 =>
-                  c_add_sub         <= '1';
-                  c_load            <= '0';
-                  c_load1           <= '1';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '0';
-                  c_load_Q          <= '1';
-                  c_load_W          <= '1';
-                  c_sel             <= '1';
-                  bfy0_ip0_reg_load <= '0';
-                  bfy0_ip1_reg_load <= '0';
-                  bfy0_mux_sel      <= '0';
-                  bfy0_tw_reg_load  <= '0';
-                  bfy0_tw_sel       <= '1';
-                  bfy1_ip0_reg_load <= '0';
-                  bfy1_ip1_reg_load <= '0';
-                  bfy1_mux_sel      <= '0';
-                  bfy1_tw_reg_load  <= '0';
-                  bfy1_tw_sel       <= '1';
+                  c_add_sub            <= '1';
+                  c_load               <= '0';
+                  c_load1              <= '1';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '0';
+                  c_load_Q             <= '1';
+                  c_load_W             <= '1';
+                  c_sel                <= '1';
+                  bfy0_ip0_reg_load    <= '0';
+                  bfy0_ip1_reg_load    <= '0';
+                  bfy0_mux_sel         <= '0';
+                  bfy0_tw_reg_load     <= '0';
+                  bfy0_tw_sel          <= '0';
+                  bfy0_add_op_reg_load <= '1';
+                  bfy0_sub_op_reg_load <= '0';                  
+                  bfy1_ip0_reg_load    <= '0';
+                  bfy1_ip1_reg_load    <= '0';
+                  bfy1_mux_sel         <= '0';
+                  bfy1_tw_reg_load     <= '0';
+                  bfy1_tw_sel          <= '0';
+                  bfy1_add_op_reg_load <= '1';
+                  bfy1_sub_op_reg_load <= '0';                  
 
                   cycle_clock_instance := 3;
                 when 3 =>
-                  c_add_sub         <= '0';
-                  c_load            <= '1';
-                  c_load1           <= '0';
-                  c_load_P          <= '0';
-                  c_load_P2         <= '1';
-                  c_load_Q          <= '0';
-                  c_load_W          <= '1';
-                  c_sel             <= '0';
-                  bfy0_ip0_reg_load <= '1';
-                  bfy0_ip1_reg_load <= '1';
-                  bfy0_mux_sel      <= '1';
-                  bfy0_tw_reg_load  <= '1';
-                  bfy0_tw_sel       <= '0';
-                  bfy1_ip0_reg_load <= '1';
-                  bfy1_ip1_reg_load <= '1';
-                  bfy1_mux_sel      <= '1';
-                  bfy1_tw_reg_load  <= '1';
-                  bfy1_tw_sel       <= '0';                  
+                  c_add_sub            <= '0';
+                  c_load               <= '1';
+                  c_load1              <= '0';
+                  c_load_P             <= '0';
+                  c_load_P2            <= '1';
+                  c_load_Q             <= '0';
+                  c_load_W             <= '1';
+                  c_sel                <= '0';
+                  bfy0_ip0_reg_load    <= '1';
+                  bfy0_ip1_reg_load    <= '1';
+                  bfy0_mux_sel         <= '1';
+                  bfy0_tw_reg_load     <= '1';
+                  bfy0_tw_sel          <= '1';
+                  bfy0_add_op_reg_load <= '0';
+                  bfy0_sub_op_reg_load <= '1';                  
+                  bfy1_ip0_reg_load    <= '1';
+                  bfy1_ip1_reg_load    <= '1';
+                  bfy1_mux_sel         <= '1';
+                  bfy1_tw_reg_load     <= '1';
+                  bfy1_tw_sel          <= '1';
+                  bfy1_add_op_reg_load <= '0';
+                  bfy1_sub_op_reg_load <= '1';
 
                   cycle_clock_instance := 0;
                 when others => null;
@@ -563,23 +624,27 @@ begin  -- control_unit_arch
 
               --No more butterfly computations are needed hence
               --set the rest of the control signals to 0
-              c_load            <= '0';
-              c_load1           <= '0';
-              c_load_P          <= '0';
-              c_load_P2         <= '0';
-              c_load_Q          <= '0';
-              c_load_W          <= '0';
-              c_sel             <= '0';
-              bfy0_ip0_reg_load <= '0';
-              bfy0_ip1_reg_load <= '0';
-              bfy0_mux_sel      <= '0';
-              bfy0_tw_reg_load  <= '0';
-              bfy0_tw_sel       <= '0';
-              bfy1_ip0_reg_load <= '0';
-              bfy1_ip1_reg_load <= '0';
-              bfy1_mux_sel      <= '0';
-              bfy1_tw_reg_load  <= '0';
-              bfy1_tw_sel       <= '0';
+              c_load               <= '0';
+              c_load1              <= '0';
+              c_load_P             <= '0';
+              c_load_P2            <= '0';
+              c_load_Q             <= '0';
+              c_load_W             <= '0';
+              c_sel                <= '0';
+              bfy0_ip0_reg_load    <= '0';
+              bfy0_ip1_reg_load    <= '0';
+              bfy0_mux_sel         <= '0';
+              bfy0_tw_reg_load     <= '0';
+              bfy0_tw_sel          <= '0';
+              bfy0_add_op_reg_load <= '0';
+              bfy0_sub_op_reg_load <= '0';              
+              bfy1_ip0_reg_load    <= '0';
+              bfy1_ip1_reg_load    <= '0';
+              bfy1_mux_sel         <= '0';
+              bfy1_tw_reg_load     <= '0';
+              bfy1_tw_sel          <= '0';
+              bfy1_add_op_reg_load <= '0';
+              bfy1_sub_op_reg_load <= '0';              
 
               if pipe_line_flush = 0 then
 
@@ -597,28 +662,32 @@ begin  -- control_unit_arch
           when others =>
 
             --after everything is done go to the reset state
-            next_state        <= S0;
-            SetA_RW           <= '0';
-            SetB_RW           <= '0';
-            done              <= '1';
-            c_add_sub         <= '0';
-            c_load            <= '0';
-            c_load1           <= '0';
-            c_load_P          <= '0';
-            c_load_P2         <= '0';
-            c_load_Q          <= '0';
-            c_load_W          <= '0';
-            c_sel             <= '0';
-            bfy0_ip0_reg_load <= '0';
-            bfy0_ip1_reg_load <= '0';
-            bfy0_mux_sel      <= '0';
-            bfy0_tw_reg_load  <= '0';
-            bfy0_tw_sel       <= '0';
-            bfy1_ip0_reg_load <= '0';
-            bfy1_ip1_reg_load <= '0';
-            bfy1_mux_sel      <= '0';
-            bfy1_tw_reg_load  <= '0';
-            bfy1_tw_sel       <= '0';
+            next_state           <= S0;
+            SetA_RW              <= '0';
+            SetB_RW              <= '0';
+            done                 <= '1';
+            c_add_sub            <= '0';
+            c_load               <= '0';
+            c_load1              <= '0';
+            c_load_P             <= '0';
+            c_load_P2            <= '0';
+            c_load_Q             <= '0';
+            c_load_W             <= '0';
+            c_sel                <= '0';
+            bfy0_ip0_reg_load    <= '0';
+            bfy0_ip1_reg_load    <= '0';
+            bfy0_mux_sel         <= '0';
+            bfy0_tw_reg_load     <= '0';
+            bfy0_tw_sel          <= '0';
+            bfy0_add_op_reg_load <= '0';
+            bfy0_sub_op_reg_load <= '0';                            
+            bfy1_ip0_reg_load    <= '0';
+            bfy1_ip1_reg_load    <= '0';
+            bfy1_mux_sel         <= '0';
+            bfy1_tw_reg_load     <= '0';
+            bfy1_tw_sel          <= '0';
+            bfy1_add_op_reg_load <= '0';
+            bfy1_sub_op_reg_load <= '0';              
 
         end case;
 
