@@ -5,7 +5,7 @@
 -- File       : fft_processor_core.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : 
--- Last update: 2012/10/17
+-- Last update: 2012/11/06
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The core of fft computation involving butterfly unit, control
@@ -121,33 +121,35 @@ architecture rtl of fft_core is
       N_width : integer);
 
   port (
-    clk               : in  std_logic;
-    rst               : in  std_logic;
-    start             : in  std_logic;    
-    N                 : in  std_logic_vector(N_width-1 downto 0);
-    c_add_sub         : out std_logic;
-    c_load            : out std_logic;
-    c_load1           : out std_logic;
-    c_load_P          : out std_logic;
-    c_load_P2         : out std_logic;
-    c_load_Q          : out std_logic;
-    c_load_W          : out std_logic;
-    c_sel             : out std_logic;
-    SetA_RW           : out std_logic;
-    SetB_RW           : out std_logic;
-    bfy0_ip0_reg_load : out std_logic;
-    bfy0_ip1_reg_load : out std_logic;
-    bfy0_mux_sel      : out std_logic;
-    bfy0_tw_reg_load  : out std_logic;
-    bfy0_tw_sel       : out std_logic;
-
-    bfy1_ip0_reg_load : out std_logic;
-    bfy1_ip1_reg_load : out std_logic;
-    bfy1_mux_sel      : out std_logic;
-    bfy1_tw_reg_load  : out std_logic;
-    bfy1_tw_sel       : out std_logic;
-    
-    done              : out std_logic);
+    clk                    : in  std_logic;
+    rst                    : in  std_logic;
+    start                  : in  std_logic;    
+    N                      : in  std_logic_vector(N_width-1 downto 0);
+    c_add_sub              : out std_logic;
+    c_load                 : out std_logic;
+    c_load1                : out std_logic;
+    c_load_P               : out std_logic;
+    c_load_P2              : out std_logic;
+    c_load_Q               : out std_logic;
+    c_load_W               : out std_logic;
+    c_sel                  : out std_logic;
+    SetA_RW                : out std_logic;
+    SetB_RW                : out std_logic;
+    bfy0_ip0_reg_load      : out std_logic;
+    bfy0_ip1_reg_load      : out std_logic;
+    bfy0_mux_sel           : out std_logic;
+    bfy0_tw_reg_load       : out std_logic;
+    bfy0_tw_sel            : out std_logic;
+    bfy0_add_op_reg_load   : out std_logic;
+    bfy0_sub_op_reg_load   : out std_logic;
+    bfy1_ip0_reg_load      : out std_logic;
+    bfy1_ip1_reg_load      : out std_logic;
+    bfy1_mux_sel           : out std_logic;
+    bfy1_tw_reg_load       : out std_logic;
+    bfy1_tw_sel            : out std_logic;
+    bfy1_add_op_reg_load   : out std_logic;
+    bfy1_sub_op_reg_load   : out std_logic;
+    done                   : out std_logic);
   end component;
 
   --Interconnect unit
@@ -264,31 +266,35 @@ begin  -- rtl
       N_width => N_WIDTH)
     
     port map (
-      clk               => clk,
-      rst               => rst,
-      start             => start,
-      N                 => N,
-      c_add_sub         => s_add_sub,
-      c_load            => s_load,
-      c_load1           => s_load1,
-      c_load_P          => s_load_P,
-      c_load_P2         => s_load_P2,
-      c_load_Q          => s_load_Q,
-      c_load_W          => s_load_W,
-      c_sel             => s_sel,
-      SetA_RW           => s_SetA_RW,
-      SetB_RW           => s_SetB_RW,
-      bfy0_ip0_reg_load => s_bfy0_ip0_reg_load,
-      bfy0_ip1_reg_load => s_bfy0_ip1_reg_load,
-      bfy0_mux_sel      => s_bfy0_mux_sel,
-      bfy0_tw_reg_load  => s_bfy0_tw_reg_load,
-      bfy0_tw_sel       => s_bfy0_tw_sel,
-      bfy1_ip0_reg_load => s_bfy1_ip0_reg_load,
-      bfy1_ip1_reg_load => s_bfy1_ip1_reg_load,
-      bfy1_mux_sel      => s_bfy1_mux_sel,
-      bfy1_tw_reg_load  => s_bfy1_tw_reg_load,
-      bfy1_tw_sel       => s_bfy1_tw_sel,
-      done              => done);
+      clk                  => clk,
+      rst                  => rst,
+      start                => start,
+      N                    => N,
+      c_add_sub            => s_add_sub,
+      c_load               => s_load,
+      c_load1              => s_load1,
+      c_load_P             => s_load_P,
+      c_load_P2            => s_load_P2,
+      c_load_Q             => s_load_Q,
+      c_load_W             => s_load_W,
+      c_sel                => s_sel,
+      SetA_RW              => s_SetA_RW,
+      SetB_RW              => s_SetB_RW,
+      bfy0_ip0_reg_load    => s_bfy0_ip0_reg_load,
+      bfy0_ip1_reg_load    => s_bfy0_ip1_reg_load,
+      bfy0_mux_sel         => s_bfy0_mux_sel,
+      bfy0_tw_reg_load     => s_bfy0_tw_reg_load,
+      bfy0_tw_sel          => s_bfy0_tw_sel,
+      bfy0_add_op_reg_load => s_bfy0_add_op_reg_load,
+      bfy0_sub_op_reg_load => s_bfy0_sub_op_reg_load,      
+      bfy1_ip0_reg_load    => s_bfy1_ip0_reg_load,
+      bfy1_ip1_reg_load    => s_bfy1_ip1_reg_load,
+      bfy1_mux_sel         => s_bfy1_mux_sel,
+      bfy1_tw_reg_load     => s_bfy1_tw_reg_load,
+      bfy1_tw_sel          => s_bfy1_tw_sel,
+      bfy1_add_op_reg_load => s_bfy1_add_op_reg_load,
+      bfy1_sub_op_reg_load => s_bfy1_sub_op_reg_load,      
+      done                 => done);
 
   --Feed the read-write control
   --signal for the memory bank set A
