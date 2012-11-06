@@ -5,7 +5,7 @@
 -- File       : fft_core_top_level.vhd
 -- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
 -- Company    : Tampere University of Technology
--- Last update: 2012/10/17
+-- Last update: 2012/11/06
 -- Platform   : 
 -------------------------------------------------------------------------------
 -- Description: The interface of N-point FFT processor core with the memory
@@ -106,7 +106,8 @@ architecture rtl of fft_core_top_level is
       rw       : in  std_logic;
       addr_bus : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       data_in  : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-      data_out : out std_logic_vector(DATA_WIDTH-1 downto 0));
+      data_out : out std_logic_vector(DATA_WIDTH-1 downto 0);
+      done     : in  std_logic);
   end component;
 
   --ROM unit
@@ -188,7 +189,8 @@ begin  -- rtl
       rw       => s_rw0,
       addr_bus => s_addr0,
       data_in  => s_dout0,
-      data_out => s_din0);
+      data_out => s_din0,
+      done     => s_done);
 
     --RAM1
   U1: single_port_RAM
@@ -202,7 +204,8 @@ begin  -- rtl
       rw       => s_rw1,
       addr_bus => s_addr1,
       data_in  => s_dout1,
-      data_out => s_din1);
+      data_out => s_din1,
+      done     => s_done);
 
   --RAM2  
   U2: single_port_RAM
@@ -216,7 +219,8 @@ begin  -- rtl
       rw       => s_rw2,
       addr_bus => s_addr2,
       data_in  => s_dout2,
-      data_out => s_din2);
+      data_out => s_din2,
+      done     => s_done);
 
   --RAM3  
   U3: single_port_RAM
@@ -230,7 +234,8 @@ begin  -- rtl
       rw       => s_rw3,
       addr_bus => s_addr3,
       data_in  => s_dout3,
-      data_out => s_din3);
+      data_out => s_din3,
+      done     => s_done);
   
   --RAM4
   U4: single_port_RAM
@@ -244,7 +249,8 @@ begin  -- rtl
       rw       => s_rw4,
       addr_bus => s_addr4,
       data_in  => s_dout4,
-      data_out => s_din4);
+      data_out => s_din4,
+      done     => s_done);
 
   --RAM5  
   U5: single_port_RAM
@@ -258,7 +264,8 @@ begin  -- rtl
       rw       => s_rw5,
       addr_bus => s_addr5,
       data_in  => s_dout5,
-      data_out => s_din5);
+      data_out => s_din5,
+      done     => s_done);
 
   --RAM6  
   U6: single_port_RAM
@@ -272,7 +279,8 @@ begin  -- rtl
       rw       => s_rw6,
       addr_bus => s_addr6,
       data_in  => s_dout6,
-      data_out => s_din6);
+      data_out => s_din6,
+      done     => s_done);
 
   --RAM7  
   U7: single_port_RAM
@@ -286,7 +294,8 @@ begin  -- rtl
       rw       => s_rw7,
       addr_bus => s_addr7,
       data_in  => s_dout7,
-      data_out => s_din7);  
+      data_out => s_din7,
+      done     => s_done);
 
   --ROM0
   U8: single_port_ROM
