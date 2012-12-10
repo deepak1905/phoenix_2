@@ -21,7 +21,6 @@ presented to supervisor to test the maturity of understanding on the thesis proj
 *. The thesis presentation(Deepak_Revanna_Thesis_Presentation.ppt) contains the presentation slides on the thesis
 project work presented before the thesis supervisor.
 
-NOTE: The theis project is progressing well and it is now close to completion.
 
 
 
