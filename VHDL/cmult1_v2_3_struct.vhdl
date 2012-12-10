@@ -9,6 +9,8 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.std_logic_arith.all;
+--Q14 fix
+use ieee.std_logic_unsigned.all;
 
 ENTITY cmult1_v2_3 IS
    PORT( 
@@ -74,13 +76,15 @@ BEGIN
    I0combo_proc: PROCESS (CB, DA)
    VARIABLE temp_din0 : std_logic_vector(16 DOWNTO 0);
    VARIABLE temp_din1 : std_logic_vector(16 DOWNTO 0);
-   VARIABLE sum : signed(16 DOWNTO 0);
+   --VARIABLE sum : signed(16 DOWNTO 0);
+   VARIABLE sum : signed(15 DOWNTO 0);
    VARIABLE carry : std_logic;
    BEGIN
-      temp_din0 := CB(15) & CB;
-      temp_din1 := DA(15) & DA;
+      --temp_din0 := CB(15) & CB;
+      --temp_din1 := DA(15) & DA;
       carry := '0';
-      sum := signed(temp_din0) + signed(temp_din1) + carry;
+      --sum := signed(temp_din0) + signed(temp_din1) + carry;
+      sum := signed(CB) + signed(DA) + carry;
       imagout <= conv_std_logic_vector(sum(15 DOWNTO 0),16);
    END PROCESS I0combo_proc;
 
@@ -134,8 +138,13 @@ BEGIN
    VARIABLE itemp: std_logic_vector(31 DOWNTO 0);
    BEGIN
       itemp := mw_I6temp_din(31 DOWNTO 0);
+      --dout0 <= itemp(15 DOWNTO 0);
+      --DA <= itemp(31 DOWNTO 16);      
+
+      --Q14 fix
+      itemp := SHR(itemp, "1110");
       dout0 <= itemp(15 DOWNTO 0);
-      DA <= itemp(31 DOWNTO 16);
+      DA <= itemp(15 DOWNTO 0);
    END PROCESS I6combo_proc;
 
    -- ModuleWare code(v1.4) for instance 'I7' of 'split'
@@ -146,19 +155,26 @@ BEGIN
       itemp := mw_I7temp_din(31 DOWNTO 0);
       dout1 <= itemp(15 DOWNTO 0);
       DB <= itemp(31 DOWNTO 16);
+
+      --Q14 fix
+      itemp := SHR(itemp, "1110");
+      dout1 <= itemp(15 downto 0);
+      DB    <= itemp(15 downto 0);
    END PROCESS I7combo_proc;
 
    -- ModuleWare code(v1.4) for instance 'I2' of 'sub'
    I2combo_proc: PROCESS (CA, DB)
    VARIABLE temp_din0 : std_logic_vector(16 DOWNTO 0);
    VARIABLE temp_din1 : std_logic_vector(16 DOWNTO 0);
-   VARIABLE diff : signed(16 DOWNTO 0);
+   --VARIABLE diff : signed(16 DOWNTO 0);
+   VARIABLE diff : signed(15 DOWNTO 0);
    VARIABLE borrow : std_logic;
    BEGIN
-      temp_din0 := CA(15) & CA;
-      temp_din1 := DB(15) & DB;
+      --temp_din0 := CA(15) & CA;
+      --temp_din1 := DB(15) & DB;
       borrow := '0';
-      diff := signed(temp_din0) - signed(temp_din1) - borrow;
+      --diff := signed(temp_din0) - signed(temp_din1) - borrow;
+      diff := signed(CA) - signed(DB) - borrow;
       realout <= conv_std_logic_vector(diff(15 DOWNTO 0),16);
    END PROCESS I2combo_proc;
 

@@ -132,6 +132,10 @@ BEGIN
       ELSE
          sum := signed(temp_din0) - signed(temp_din1) - carry;
       END IF;
+
+      --Q14 fix
+      sum := SHR(sum, "1");
+      
       realout <= conv_std_logic_vector(sum(15 DOWNTO 0),16);
    END PROCESS I1combo_proc;
 
@@ -150,6 +154,10 @@ BEGIN
       ELSE
          sum := signed(temp_din0) - signed(temp_din1) - carry;
       END IF;
+
+      --Q14 fix
+      sum := SHR(sum, "1");
+      
       imagout <= conv_std_logic_vector(sum(15 DOWNTO 0),16);
    END PROCESS I2combo_proc;
 
