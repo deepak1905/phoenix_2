@@ -3,10 +3,10 @@
 -- Project    : N point FFT processor
 -------------------------------------------------------------------------------
 -- File       : single_port_RAM.vhd
--- Author     : Deepak Revanna  <revanna@pikkukeiju.cs.tut.fi>
+-- Author     : Deepak Revanna  <deepak.revanna@tut.fi>
 -- Company    : Tampere university of technology
--- Last update: 2012/11/06
--- Platform   : 
+-- Last update: 2012/12/05
+-- Platform   : Altera stratix II FPGA
 -------------------------------------------------------------------------------
 -- Description: Single port RAM module enables single clock read-write
 --              operation of data.
@@ -18,151 +18,126 @@
 
 --Include necessary library and
 --packages
+
 library ieee, std;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 use std.textio.all;
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 entity single_port_RAM is
-  
+
   generic (
-    FILE_NAME  : string  := "ram_0.txt";
-    ADDR_WIDTH : integer := 4;
-    DATA_WIDTH : integer := 32);         -- the width of address bus configurable at the design time(
-                                        -- default width for 64 point FFT which
-                                        -- requires storing 16 operands per bank
+    FILE_NAME    :       string  := "ram_0.txt";
+    ADDR_WIDTH   :       integer := 4;                              --Log(N/m) for m memory banks and N point FFT: default N=64
+    DATA_WIDTH   :       integer := 32
+	      );
 
   port (
-    clk      : in    std_logic;         -- clock signal
-    rw       : in    std_logic;         -- read-write control signal(0 = read, 1 = write)
-    addr_bus : in    std_logic_vector(ADDR_WIDTH-1 downto 0);   -- the address bus whose width is configurable at the design time
-    
-    --the data bus carrying the data(upper 16 bits for real part of data and lower 16 bits is for imaginary part of data)
-    data_in  : in std_logic_vector(DATA_WIDTH-1 downto 0);
-    data_out : out std_logic_vector(DATA_WIDTH-1 downto 0);
-    done     : in std_logic);           --FFT completion signal required to
-                                        --write the final results back to file
-                                        --(data verification strategy)
-
+    clk          : in    std_logic;                                 --Clock signal
+    ram_rw       : in    std_logic;                                 --Read-write control signal(0 = read, 1 = write)
+    ram_enable   : in    std_logic;                                 --Enable signale 1=enable, 0=disable
+    ram_addr     : in    std_logic_vector(ADDR_WIDTH-1 downto 0);   --Address bus
+    ram_data_in  : in    std_logic_vector(DATA_WIDTH-1 downto 0);   --The data in(upper 16 bits:real part, lower 16 bits: imaginary part)
+    ram_data_out : out   std_logic_vector(DATA_WIDTH-1 downto 0);   --The data out(upper 16 bits:real part, lower 16 bits: imaginary part)
+    ram_done     : in    std_logic                                  --Temporary to sense FFT completion and store results from RAM to text file
+	   );                                                           
                                         
 end single_port_RAM;
 
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
 architecture rtl of single_port_RAM is
 
-  subtype ram_word is std_logic_vector(DATA_WIDTH-1 downto 0);
-  type RAM_memory is array ((2**ADDR_WIDTH)-1 downto 0) of ram_word;
+  subtype ram_word   is std_logic_vector(DATA_WIDTH-1 downto 0);
+  type    RAM_memory is array ((2**ADDR_WIDTH)-1 downto 0) of ram_word;
   signal temp : std_logic;
 
-  impure function initialize_RAM(file_name : string)
-    return RAM_memory is
+  --NOTE: We cannot reference file parameters inside
+  --the pure function, hence the function is defined
+  --as an impure function
+  
+  impure function initialize_RAM(file_name : string)             --Function to initialize RAM from text file
+  return RAM_memory is
 
-    file file_handle : text;
-    variable lineread : line;
-    variable dataread : integer range -2_147_483_647 to 2_147_483_647;
-    variable ram_mem : RAM_memory;
-    variable is_open : boolean := false;
+    variable ram_mem          : RAM_memory;
+    file file_handle          : text;
+    variable lineread         : line;
+    variable dataread         : integer range -2_147_483_647 to 2_147_483_647;
+    variable is_open          : boolean                               := false;
+    variable num_pos          : std_logic_vector(ADDR_WIDTH downto 0) := (others => '0');
+    variable index            : std_logic_vector(ADDR_WIDTH downto 0) := (others => '0');
+    variable init_index_value : std_logic_vector(ADDR_WIDTH downto 0) := (others => '0');
 
-  begin
+    begin
 
     if is_open = false then
 
-    file_open(file_handle, file_name, READ_MODE);
-    is_open := true;
+      file_open(file_handle, file_name, READ_MODE);
+      is_open := true;
 
     end if;
 
-      --for 8 point FFT
-      for i in 0 to 1 loop
+    num_pos             := conv_std_logic_vector(ADDR_WIDTH, ADDR_WIDTH+1);         --Read data from RAM initialization file and : store it in RAM
+    init_index_value(0) := '1';
+    index               := SHL(init_index_value, num_pos);
+    
+    for i in 0 to conv_integer(index)-1 loop
 
         if (not endfile(file_handle)) then
           
-          readline(file_handle, lineread);
-          read(lineread, dataread);
-          ram_mem(i) := conv_std_logic_vector(dataread, DATA_WIDTH);
+            readline(file_handle, lineread);
+            read(lineread, dataread);
+            ram_mem(i) := conv_std_logic_vector(dataread, DATA_WIDTH);
 
-        end if;      
+        end if;
 
-      end loop;
+    end loop;
 
-      file_close(file_handle);
-      return ram_mem;
+    file_close(file_handle);
+    return ram_mem;
       
-    end function initialize_RAM;
+  end function initialize_RAM;
+  
+-------------------------------------------------------------------------------
 
-  signal RAM_memory_bank : RAM_memory := initialize_RAM(FILE_NAME);
-  signal undef_value : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => 'U');
+  signal RAM_memory_bank : RAM_memory                              := initialize_RAM(FILE_NAME); --Instantiate and initialize RAM
+  signal undef_value     : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => 'U');
 
   begin
 
-    --perform synchronous read-write RAM operation
-    RW_PROCESS: process(clk)
+    RW_PROCESS: process(clk)                                                             --Perform synchronous read-write RAM operation
 
-      file file_handle : text;
-      variable linewrite: line;
+      file file_handle   : text;
+      variable linewrite : line;
       variable datawrite : integer;
       
     begin
 
-      if clk'event and clk = '1' then
+        if clk'event and clk = '1' then
 
-        if rw = '0' then
+            if ram_rw = '0' then                                                         --Read operation when ram_rw='0'
 
-          --Read from RAM only if the address is valid
-          if addr_bus /= undef_value then
-            
-          --read from the RAM and send the data in the output bus
-          data_out <= RAM_memory_bank(conv_integer(unsigned(addr_bus)));
+                if ram_enable = '1' and ram_addr /= undef_value then                     --Read when enable is active and address is valid
 
-          else
-
-            --drive the output to tristate if
-            --the address bus is invalid
-            data_out <= (others => 'Z');
-
-          end if;          
+                    ram_data_out <= RAM_memory_bank(conv_integer(unsigned(ram_addr)));   --Read from the RAM and send the data in the output bus
           
-        elsif rw = '1' then
+                end if;          
 
-          --write only if the address is valid
-          if addr_bus /= undef_value then
-            
-            --write the data coming in from input bus into the RAM
-            --and drive the output bus into tristate value
-            RAM_memory_bank(conv_integer(unsigned(addr_bus))) <= data_in;
-            
-          end if;
+            elsif ram_rw = '1' then                                                      --Write operation when ram_rw='1'
 
-          --drive the output data bus to tristate during
-          --the read operation
-          data_out <= (others => 'Z');
-            
-        else
+                if ram_enable = '1' and ram_addr /= undef_value then                     --Write only if enable is active and the address is valid
 
-          --when the rw signal is not valid, drive
-          --output to tristate
-          data_out <= (others => 'Z');              
-            
+                    RAM_memory_bank(conv_integer(unsigned(ram_addr))) <= ram_data_in;    --Write the data coming in from input bus into RAM
+
+                end if;
+
+            end if;
+
         end if;
-
---        temp <= done;
---
---        if temp = '1' then
---
---        file_open(file_handle, file_name, WRITE_MODE);
---
---          for i in 0 to 1 loop
---
---            datawrite := conv_integer(signed(RAM_memory_bank(i)));
---            write(linewrite, datawrite);
---            writeline(file_handle, linewrite);
---
---          end loop;
---
---          file_close(file_handle);
---
---        end if;
-
-      end if;
 
     end process RW_PROCESS;
 
