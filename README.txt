@@ -13,7 +13,7 @@ The project hosted on this site consists of the following:
 *. The simulation_results folder contains screen shots of simulation results of FFT computation for various N values.
 
 *. The synthesis_results folder contains the screen shot of the results after synthesizing the design on an 
-Altera stratix II FPGA. These are initial synthesis results.
+Altera stratix V FPGA.
 
 *. The thesis maturity test("Deepak_Revanna_Thesis_Maturity_Test.pdf") is a plain text summary on the thesis topic 
 presented to supervisor to test the maturity of understanding on the thesis project implemented.
